@@ -5,7 +5,7 @@
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/chatgptuk/cloudbrowser)
 [![Deploy workflow](https://github.com/chatgptuk/cloudbrowser/actions/workflows/deploy.yml/badge.svg)](https://github.com/chatgptuk/cloudbrowser/actions/workflows/deploy.yml)
 
-用户输入公开网址后，Worker 会启动远程 Chrome、导航到目标页面，并返回 Cloudflare Live View 短期访问链接。Durable Object 保存会话元数据并在 10 分钟后强制关闭浏览器。
+用户输入公开网址后，Worker 会启动远程 Chrome、导航到目标页面，并返回 Cloudflare Live View 短期访问链接。Durable Object 保存会话元数据，并在配置的会话时间到期后强制关闭浏览器。
 
 ## 已实现
 
@@ -55,7 +55,8 @@ Durable Object (owner)
 
 - `ADMIN_TOKEN`：足够长的随机控制台访问口令
 - `CLOUDFLARE_ACCOUNT_ID`：Cloudflare Account ID
-- `CLOUDFLARE_BROWSER_TOKEN`：仅限当前账户、具有 Browser Rendering 编辑权限的 API Token
+- `CLOUDFLARE_BROWSER_TOKEN`：仅限当前账户、具有 Browser Run 编辑权限的 API Token
+- `BROWSER_SESSION_TTL_SECONDS`（可选 Variable）：会话时长，支持 `60`–`86400` 秒；默认 `600`
 
 设置 Secret 后重新部署一次 Worker。Deploy 按钮不能代替你创建敏感凭证，因此这一步不能安全地完全自动化。
 
@@ -101,7 +102,7 @@ npx wrangler dev \
 
 ## 手动部署
 
-需要 Workers Paid 计划和 Browser Run。创建一个仅限当前账户的 API Token，并授予 Browser Rendering 编辑权限。
+需要 Workers Paid 计划和 Browser Run。创建一个仅限当前账户的 API Token，并授予 Browser Run 编辑权限。
 
 设置三个生产 Secret：
 
@@ -130,6 +131,8 @@ npm run deploy
 
 配置中的 Browser Run binding 名为 `BROWSER`，Durable Object binding 名为 `BROWSER_SESSIONS`。首次部署会通过 `v1` migration 创建 SQLite-backed Durable Object 类。
 
+`BROWSER_SESSION_TTL_SECONDS` 控制 CloudBrowser 的总会话时长，默认 600 秒，最大 86400 秒。例如配置为 `3600` 时，界面会显示一小时。Cloudflare 的单次无活动 `keep_alive` 上限仍为 600 秒；控制台打开时会每四分钟刷新 Live View，使活跃会话继续运行。如果控制台关闭或断网超过十分钟，Cloudflare 可能在总会话到期前回收浏览器。
+
 ## 验证清单
 
 部署后至少验证：
@@ -140,7 +143,7 @@ npm run deploy
 4. `https://example.com` 可以创建会话。
 5. “打开实时浏览器”进入 `live.browser.run`，且 API Token 不出现在页面或网络响应里。
 6. “结束并销毁”后 Live View 不再可用。
-7. 不操作时 10 分钟后 Durable Object alarm 会关闭会话。
+7. 到达 `BROWSER_SESSION_TTL_SECONDS` 配置的时间后，Durable Object alarm 会关闭会话。
 8. Cloudflare Browser Run 仪表板没有异常遗留会话。
 
 ## 安全边界

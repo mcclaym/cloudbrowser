@@ -18,6 +18,7 @@ const elements = {
   launchButton: document.querySelector("#launch-button"),
   targetUrl: document.querySelector("#target-url"),
   formMessage: document.querySelector("#form-message"),
+  sessionDurationLabel: document.querySelector("#session-duration-label"),
   idleTimerChip: document.querySelector("#idle-timer-chip"),
   emptySession: document.querySelector("#empty-session"),
   activeSession: document.querySelector("#active-session"),
@@ -176,6 +177,27 @@ function formatDuration(totalSeconds) {
   return `${String(minutes).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
 }
 
+function formatSessionDuration(totalSeconds) {
+  const seconds = Math.max(60, Math.floor(totalSeconds));
+  if (seconds % 3600 === 0) {
+    return `${seconds / 3600} 小时`;
+  }
+  if (seconds >= 3600) {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    return `${hours} 小时 ${minutes} 分钟`;
+  }
+  return `${Math.floor(seconds / 60)} 分钟`;
+}
+
+function applySessionConfig(config) {
+  state.sessionTtlSeconds = config.sessionTtlSeconds || 600;
+  elements.sessionDurationLabel.textContent =
+    `${formatSessionDuration(state.sessionTtlSeconds)}隔离会话`;
+  elements.idleTimerChip.textContent =
+    `最长 ${formatDuration(state.sessionTtlSeconds)}`;
+}
+
 async function refreshStatus() {
   if (!state.token) {
     return;
@@ -229,7 +251,7 @@ elements.authForm.addEventListener("submit", async (event) => {
       api("/api/session"),
       fetch("/api/config").then((response) => response.json()),
     ]);
-    state.sessionTtlSeconds = config.sessionTtlSeconds || 600;
+    applySessionConfig(config);
     sessionStorage.setItem("cloudbrowser_token", token);
     unlockConsole();
     renderSession(session);
@@ -306,8 +328,7 @@ document.addEventListener("visibilitychange", () => {
 async function boot() {
   try {
     const config = await fetch("/api/config").then((response) => response.json());
-    state.sessionTtlSeconds = config.sessionTtlSeconds || 600;
-    elements.idleTimerChip.textContent = `最长 ${formatDuration(state.sessionTtlSeconds)}`;
+    applySessionConfig(config);
   } catch {
     // The protected API will provide a useful error when the user signs in.
   }

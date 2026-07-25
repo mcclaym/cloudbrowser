@@ -3,6 +3,10 @@ import puppeteer, { type BrowserWorker } from "@cloudflare/puppeteer";
 
 import { closeBrowserSession, getLiveViewUrls, type LiveViewUrls } from "./cloudflare-api";
 import {
+  browserKeepAliveMilliseconds,
+  configuredSessionTtlSeconds,
+} from "./session-config";
+import {
   constantTimeEqual,
   isBrowserRequestAllowed,
   normalizeTargetUrl,
@@ -39,8 +43,6 @@ interface SessionStatus {
 
 const SESSION_KEY = "browser-session";
 const MAX_BODY_BYTES = 4096;
-const MIN_TTL_SECONDS = 60;
-const MAX_TTL_SECONDS = 600;
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -52,7 +54,9 @@ export default {
 
     if (url.pathname === "/api/config" && request.method === "GET") {
       return json({
-        sessionTtlSeconds: sessionTtlSeconds(env),
+        sessionTtlSeconds: configuredSessionTtlSeconds(
+          env.BROWSER_SESSION_TTL_SECONDS,
+        ),
         authConfigured: Boolean(env.ADMIN_TOKEN),
       });
     }
@@ -176,7 +180,10 @@ export class BrowserSession extends DurableObject<Env> {
     }
 
     const now = Date.now();
-    const expiresAt = now + sessionTtlSeconds(this.env) * 1000;
+    const sessionTtlSeconds = configuredSessionTtlSeconds(
+      this.env.BROWSER_SESSION_TTL_SECONDS,
+    );
+    const expiresAt = now + sessionTtlSeconds * 1000;
 
     if (this.env.BROWSER_MOCK === "true") {
       const record: SessionRecord = {
@@ -197,7 +204,7 @@ export class BrowserSession extends DurableObject<Env> {
     assertBrowserApiConfigured(this.env);
 
     const browser = await puppeteer.launch(this.env.BROWSER, {
-      keep_alive: sessionTtlSeconds(this.env) * 1000,
+      keep_alive: browserKeepAliveMilliseconds(sessionTtlSeconds),
       recording: false,
     });
 
@@ -345,14 +352,6 @@ function assertBrowserApiConfigured(
       "尚未配置 CLOUDFLARE_ACCOUNT_ID 或 CLOUDFLARE_BROWSER_TOKEN。",
     );
   }
-}
-
-function sessionTtlSeconds(env: Env): number {
-  const configured = Number.parseInt(env.BROWSER_SESSION_TTL_SECONDS ?? "", 10);
-  if (!Number.isFinite(configured)) {
-    return MAX_TTL_SECONDS;
-  }
-  return Math.min(MAX_TTL_SECONDS, Math.max(MIN_TTL_SECONDS, configured));
 }
 
 function publicStatus(record: SessionRecord): SessionStatus {
