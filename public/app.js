@@ -77,6 +77,7 @@ const elements = {
   refreshLinkButton: document.querySelector("#refresh-link-button"),
   stopButton: document.querySelector("#stop-button"),
   browserStage: document.querySelector("#browser-stage"),
+  openLiveTabLink: document.querySelector("#open-live-tab-link"),
   fullscreenLiveButton: document.querySelector("#fullscreen-live-button"),
   liveBrowserFrame: document.querySelector("#live-browser-frame"),
   liveFramePlaceholder: document.querySelector("#live-frame-placeholder"),
@@ -348,6 +349,8 @@ function clearLiveView() {
   elements.liveBrowserFrame.classList.add("hidden");
   elements.liveFramePlaceholder.classList.remove("hidden");
   elements.browserStage.classList.add("hidden");
+  elements.openLiveTabLink.removeAttribute("href");
+  elements.openLiveTabLink.setAttribute("aria-disabled", "true");
   if (document.fullscreenElement === elements.browserStage) {
     void document.exitFullscreen().catch(() => {});
   }
@@ -367,6 +370,8 @@ function setLiveViewUrl(liveUrl, reloadFrame = false) {
 
   state.liveUrl = url.toString();
   state.liveUrlRefreshedAt = Date.now();
+  elements.openLiveTabLink.href = state.liveUrl;
+  elements.openLiveTabLink.setAttribute("aria-disabled", "false");
   elements.browserStage.classList.remove("hidden");
 
   if (reloadFrame || !elements.liveBrowserFrame.hasAttribute("src")) {
