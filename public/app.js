@@ -8,6 +8,34 @@ const state = {
   liveUrlRefreshedAt: 0,
 };
 
+const SETTINGS_STORAGE_KEY = "cloudbrowser_browser_settings_v1";
+const VIEWPORT_PRESETS = {
+  "desktop-large": {
+    width: 1920,
+    height: 1080,
+    isMobile: false,
+    hasTouch: false,
+  },
+  "desktop-laptop": {
+    width: 1366,
+    height: 768,
+    isMobile: false,
+    hasTouch: false,
+  },
+  tablet: {
+    width: 1024,
+    height: 768,
+    isMobile: true,
+    hasTouch: true,
+  },
+  mobile: {
+    width: 390,
+    height: 844,
+    isMobile: true,
+    hasTouch: true,
+  },
+};
+
 const elements = {
   authBackdrop: document.querySelector("#auth-backdrop"),
   authForm: document.querySelector("#auth-form"),
@@ -18,6 +46,23 @@ const elements = {
   launchForm: document.querySelector("#launch-form"),
   launchButton: document.querySelector("#launch-button"),
   targetUrl: document.querySelector("#target-url"),
+  browserSettings: document.querySelector("#browser-settings"),
+  browserSettingsFields: document.querySelector("#browser-settings-fields"),
+  settingsSummary: document.querySelector("#settings-summary"),
+  viewportPreset: document.querySelector("#viewport-preset"),
+  customViewport: document.querySelector("#custom-viewport"),
+  viewportWidth: document.querySelector("#viewport-width"),
+  viewportHeight: document.querySelector("#viewport-height"),
+  mobileEmulation: document.querySelector("#mobile-emulation"),
+  browserLocale: document.querySelector("#browser-locale"),
+  browserTimezone: document.querySelector("#browser-timezone"),
+  colorScheme: document.querySelector("#color-scheme"),
+  customUserAgent: document.querySelector("#custom-user-agent"),
+  geolocationToggle: document.querySelector("#geolocation-toggle"),
+  geolocationFields: document.querySelector("#geolocation-fields"),
+  geoLatitude: document.querySelector("#geo-latitude"),
+  geoLongitude: document.querySelector("#geo-longitude"),
+  geoAccuracy: document.querySelector("#geo-accuracy"),
   formMessage: document.querySelector("#form-message"),
   sessionDurationLabel: document.querySelector("#session-duration-label"),
   idleTimerChip: document.querySelector("#idle-timer-chip"),
@@ -32,6 +77,7 @@ const elements = {
   refreshLinkButton: document.querySelector("#refresh-link-button"),
   stopButton: document.querySelector("#stop-button"),
   browserStage: document.querySelector("#browser-stage"),
+  fullscreenLiveButton: document.querySelector("#fullscreen-live-button"),
   liveBrowserFrame: document.querySelector("#live-browser-frame"),
   liveFramePlaceholder: document.querySelector("#live-frame-placeholder"),
 };
@@ -93,6 +139,180 @@ function clearMessage(element) {
   element.classList.remove("success");
 }
 
+function viewportSettings() {
+  const preset = VIEWPORT_PRESETS[elements.viewportPreset.value];
+  if (preset) {
+    return { ...preset };
+  }
+
+  const width = validatedNumber(
+    elements.viewportWidth,
+    320,
+    1920,
+    "视口宽度",
+  );
+  const height = validatedNumber(
+    elements.viewportHeight,
+    480,
+    1080,
+    "视口高度",
+  );
+  const mobileMode = elements.mobileEmulation.checked;
+  return {
+    width,
+    height,
+    isMobile: mobileMode,
+    hasTouch: mobileMode,
+  };
+}
+
+function collectBrowserSettings() {
+  const settings = {
+    viewport: viewportSettings(),
+    colorScheme: elements.colorScheme.value,
+  };
+  const userAgent = elements.customUserAgent.value.trim();
+  if (userAgent) {
+    settings.userAgent = userAgent;
+  }
+  if (elements.browserLocale.value) {
+    settings.locale = elements.browserLocale.value;
+  }
+  if (elements.browserTimezone.value) {
+    settings.timezone = elements.browserTimezone.value;
+  }
+  if (elements.geolocationToggle.checked) {
+    settings.geolocation = {
+      latitude: validatedNumber(
+        elements.geoLatitude,
+        -90,
+        90,
+        "纬度",
+      ),
+      longitude: validatedNumber(
+        elements.geoLongitude,
+        -180,
+        180,
+        "经度",
+      ),
+      accuracy: validatedNumber(
+        elements.geoAccuracy,
+        0,
+        10_000,
+        "定位精度",
+      ),
+    };
+  }
+  return settings;
+}
+
+function validatedNumber(input, minimum, maximum, label) {
+  const value = input.valueAsNumber;
+  if (!Number.isFinite(value) || value < minimum || value > maximum) {
+    throw new Error(`${label}必须在 ${minimum}–${maximum} 之间。`);
+  }
+  return value;
+}
+
+function updateSettingsUi() {
+  const customViewport = elements.viewportPreset.value === "custom";
+  elements.customViewport.classList.toggle("hidden", !customViewport);
+  elements.geolocationFields.classList.toggle(
+    "hidden",
+    !elements.geolocationToggle.checked,
+  );
+
+  let viewport;
+  try {
+    viewport = viewportSettings();
+  } catch {
+    viewport = { width: "?", height: "?" };
+  }
+  const uaLabel = elements.customUserAgent.value.trim()
+    ? "自定义 UA"
+    : "默认 UA";
+  const colorLabel = {
+    system: "系统配色",
+    light: "浅色",
+    dark: "深色",
+  }[elements.colorScheme.value] || "系统配色";
+  elements.settingsSummary.textContent =
+    `${viewport.width} × ${viewport.height} · ${uaLabel} · ${colorLabel}`;
+}
+
+function saveBrowserSettings() {
+  const preferences = {
+    viewportPreset: elements.viewportPreset.value,
+    viewportWidth: elements.viewportWidth.value,
+    viewportHeight: elements.viewportHeight.value,
+    mobileEmulation: elements.mobileEmulation.checked,
+    locale: elements.browserLocale.value,
+    timezone: elements.browserTimezone.value,
+    colorScheme: elements.colorScheme.value,
+    userAgent: elements.customUserAgent.value,
+    geolocationEnabled: elements.geolocationToggle.checked,
+    latitude: elements.geoLatitude.value,
+    longitude: elements.geoLongitude.value,
+    accuracy: elements.geoAccuracy.value,
+  };
+  try {
+    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(preferences));
+  } catch {
+    // Private browsing modes can disable localStorage; settings still work now.
+  }
+}
+
+function loadBrowserSettings() {
+  let preferences;
+  try {
+    preferences = JSON.parse(
+      localStorage.getItem(SETTINGS_STORAGE_KEY) || "null",
+    );
+  } catch {
+    preferences = null;
+  }
+  if (!preferences || typeof preferences !== "object") {
+    updateSettingsUi();
+    return;
+  }
+
+  setSelectValue(elements.viewportPreset, preferences.viewportPreset);
+  setInputValue(elements.viewportWidth, preferences.viewportWidth);
+  setInputValue(elements.viewportHeight, preferences.viewportHeight);
+  elements.mobileEmulation.checked = preferences.mobileEmulation === true;
+  setSelectValue(elements.browserLocale, preferences.locale);
+  setSelectValue(elements.browserTimezone, preferences.timezone);
+  setSelectValue(elements.colorScheme, preferences.colorScheme);
+  if (typeof preferences.userAgent === "string") {
+    elements.customUserAgent.value = preferences.userAgent.slice(0, 512);
+  }
+  elements.geolocationToggle.checked =
+    preferences.geolocationEnabled === true;
+  setInputValue(elements.geoLatitude, preferences.latitude);
+  setInputValue(elements.geoLongitude, preferences.longitude);
+  setInputValue(elements.geoAccuracy, preferences.accuracy);
+  updateSettingsUi();
+}
+
+function setSelectValue(select, value) {
+  if (
+    typeof value === "string" &&
+    [...select.options].some((option) => option.value === value)
+  ) {
+    select.value = value;
+  }
+}
+
+function setInputValue(input, value) {
+  if (typeof value === "string" && value.length <= 32) {
+    input.value = value;
+  }
+}
+
+function setSettingsDisabled(disabled) {
+  elements.browserSettingsFields.disabled = disabled;
+}
+
 function unlockConsole() {
   elements.authBackdrop.classList.add("dismissed");
   elements.logoutButton.classList.remove("hidden");
@@ -128,6 +348,9 @@ function clearLiveView() {
   elements.liveBrowserFrame.classList.add("hidden");
   elements.liveFramePlaceholder.classList.remove("hidden");
   elements.browserStage.classList.add("hidden");
+  if (document.fullscreenElement === elements.browserStage) {
+    void document.exitFullscreen().catch(() => {});
+  }
 }
 
 function setLiveViewUrl(liveUrl, reloadFrame = false) {
@@ -161,6 +384,7 @@ function renderSession(session, liveUrls = {}, options = {}) {
     elements.emptySession.classList.remove("hidden");
     elements.launchButton.disabled = false;
     elements.targetUrl.disabled = false;
+    setSettingsDisabled(false);
     elements.idleTimerChip.textContent = `最长 ${formatDuration(state.sessionTtlSeconds)}`;
     clearLiveView();
     return;
@@ -170,6 +394,7 @@ function renderSession(session, liveUrls = {}, options = {}) {
   elements.activeSession.classList.remove("hidden");
   elements.targetUrl.disabled = true;
   elements.launchButton.disabled = true;
+  setSettingsDisabled(true);
   elements.sessionReference.textContent = `#${state.session.sessionRef}`;
   elements.sessionUrl.textContent = state.session.targetUrl;
 
@@ -308,9 +533,14 @@ elements.launchForm.addEventListener("submit", async (event) => {
   setBusy(elements.launchButton, true, "正在启动…", "启动浏览器");
 
   try {
+    const settings = collectBrowserSettings();
+    saveBrowserSettings();
     const result = await api("/api/session", {
       method: "POST",
-      body: JSON.stringify({ url: elements.targetUrl.value }),
+      body: JSON.stringify({
+        url: elements.targetUrl.value,
+        settings,
+      }),
     });
     renderSession(result, result, { reloadLiveFrame: true });
     showMessage(
@@ -325,6 +555,7 @@ elements.launchForm.addEventListener("submit", async (event) => {
     showMessage(elements.formMessage, error.message);
     elements.launchButton.disabled = false;
     elements.targetUrl.disabled = false;
+    setSettingsDisabled(false);
   } finally {
     setBusy(elements.launchButton, false, "正在启动…", "启动浏览器");
     if (state.session) {
@@ -351,6 +582,22 @@ elements.showLiveButton.addEventListener("click", async () => {
   elements.browserStage.scrollIntoView({ behavior: "smooth", block: "start" });
 });
 
+elements.fullscreenLiveButton.addEventListener("click", async () => {
+  clearMessage(elements.formMessage);
+  try {
+    if (document.fullscreenElement === elements.browserStage) {
+      await document.exitFullscreen();
+    } else {
+      await elements.browserStage.requestFullscreen();
+    }
+  } catch {
+    showMessage(
+      elements.formMessage,
+      "当前浏览器不允许进入全屏，请使用浏览器自身的全屏功能。",
+    );
+  }
+});
+
 elements.stopButton.addEventListener("click", async () => {
   clearMessage(elements.formMessage);
   elements.stopButton.disabled = true;
@@ -373,6 +620,22 @@ elements.logoutButton.addEventListener("click", () => {
 elements.liveBrowserFrame.addEventListener("load", () => {
   elements.liveFramePlaceholder.classList.add("hidden");
   elements.liveBrowserFrame.classList.remove("hidden");
+});
+
+elements.browserSettingsFields.addEventListener("input", () => {
+  updateSettingsUi();
+  saveBrowserSettings();
+});
+
+elements.browserSettingsFields.addEventListener("change", () => {
+  updateSettingsUi();
+  saveBrowserSettings();
+});
+
+document.addEventListener("fullscreenchange", () => {
+  const fullscreen = document.fullscreenElement === elements.browserStage;
+  elements.fullscreenLiveButton.querySelector("span").textContent =
+    fullscreen ? "退出全屏" : "全屏显示";
 });
 
 document.addEventListener("visibilitychange", () => {
@@ -404,4 +667,5 @@ async function boot() {
   }
 }
 
+loadBrowserSettings();
 void boot();

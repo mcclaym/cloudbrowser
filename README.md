@@ -13,6 +13,8 @@
 - Browser Run binding 创建远程 Chrome
 - Live View 普通页面与 DevTools 链接生成
 - `live.browser.run` 实时画面直接嵌入控制台
+- 启动前可设置视口、User-Agent、语言、时区、定位与网页配色
+- 1920 × 1080 桌面最大化预设与 Live View 全屏显示
 - Durable Object 会话复用、状态查询、定时销毁
 - 手动结束与 Cloudflare CDP Session API 关闭
 - 仅允许 HTTP/HTTPS、80/443 端口
@@ -101,6 +103,19 @@ npx wrangler dev \
 
 不要把 `BROWSER_MOCK` 写进生产环境配置。
 
+## 浏览器设置
+
+控制台的“浏览器设置”会在远程 Chrome 首次导航前应用：
+
+- **窗口 / 视口**：桌面最大化预设为 1920 × 1080，也可以选择笔记本、平板、手机或自定义尺寸。
+- **User-Agent**：留空使用 Browser Run 默认值；自定义值同时影响请求头和 `navigator.userAgent`。
+- **语言**：设置 `Accept-Language` 和浏览器 locale。
+- **时区**：通过 Chrome 时区模拟应用。
+- **定位**：仅向首次打开网址的 origin 授予定位权限并返回设置的坐标。
+- **网页配色**：模拟 `prefers-color-scheme` 的浅色或深色模式。
+
+这些偏好只保存在使用者本机的 `localStorage`，不会加入网址，也不会作为长期浏览器 Profile 保存。设置在会话创建后锁定，要更改时请先结束当前会话。Live View 工具栏中的“全屏显示”只放大本地控制画面；远程网页尺寸由“窗口 / 视口”决定。
+
 ## 手动部署
 
 需要 Workers Paid 计划和 Browser Run。创建一个仅限当前账户的 API Token，并授予 Browser Run 编辑权限。
@@ -143,9 +158,10 @@ npm run deploy
 3. `localhost`、`127.0.0.1`、`169.254.169.254`、私有 IPv4/IPv6 和非标准端口被拒绝。
 4. `https://example.com` 可以创建会话。
 5. 控制台内嵌的实时浏览器加载自 `live.browser.run`，且 API Token 不出现在页面或网络响应里。
-6. “结束并销毁”后 Live View 不再可用。
-7. 到达 `BROWSER_SESSION_TTL_SECONDS` 配置的时间后，Durable Object alarm 会关闭会话。
-8. Cloudflare Browser Run 仪表板没有异常遗留会话。
+6. 设置 390 × 844 手机视口、语言、时区、定位与深色模式后，目标页面能读取对应值。
+7. Live View 可以进入和退出全屏；“结束并销毁”后 iframe 地址立即被清除。
+8. 到达 `BROWSER_SESSION_TTL_SECONDS` 配置的时间后，Durable Object alarm 会关闭会话。
+9. Cloudflare Browser Run 仪表板没有异常遗留会话。
 
 ## 安全边界
 

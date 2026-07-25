@@ -1,6 +1,11 @@
 import { DurableObject } from "cloudflare:workers";
 import puppeteer, { type BrowserWorker } from "@cloudflare/puppeteer";
 
+import {
+  applyBrowserSettings,
+  BrowserSettingsError,
+  normalizeBrowserSettings,
+} from "./browser-settings";
 import { closeBrowserSession, getLiveViewUrls, type LiveViewUrls } from "./cloudflare-api";
 import {
   browserKeepAliveMilliseconds,
@@ -123,8 +128,11 @@ export class BrowserSession extends DurableObject<Env> {
       }
 
       if (url.pathname === "/start" && request.method === "POST") {
-        const payload = await request.json<{ url?: unknown }>();
-        return json(await this.start(payload.url), 201);
+        const payload = await request.json<{
+          url?: unknown;
+          settings?: unknown;
+        }>();
+        return json(await this.start(payload.url, payload.settings), 201);
       }
 
       if (url.pathname === "/live-url" && request.method === "POST") {
@@ -138,7 +146,10 @@ export class BrowserSession extends DurableObject<Env> {
 
       return errorResponse(404, "NOT_FOUND", "没有这个会话操作。");
     } catch (error) {
-      if (error instanceof TargetUrlError) {
+      if (
+        error instanceof TargetUrlError ||
+        error instanceof BrowserSettingsError
+      ) {
         return errorResponse(400, error.code, error.message);
       }
 
@@ -172,8 +183,12 @@ export class BrowserSession extends DurableObject<Env> {
     return publicStatus(record);
   }
 
-  private async start(rawUrl: unknown): Promise<SessionStatus & LiveViewUrls> {
+  private async start(
+    rawUrl: unknown,
+    rawSettings: unknown,
+  ): Promise<SessionStatus & LiveViewUrls> {
     const targetUrl = normalizeTargetUrl(rawUrl);
+    const browserSettings = normalizeBrowserSettings(rawSettings);
     const existing = await this.ctx.storage.get<SessionRecord>(SESSION_KEY);
     if (existing) {
       await this.stop(existing);
@@ -212,6 +227,7 @@ export class BrowserSession extends DurableObject<Env> {
       const pages = await browser.pages();
       const page = pages[0] ?? (await browser.newPage());
 
+      await applyBrowserSettings(page, browserSettings, targetUrl);
       await page.setRequestInterception(true);
       page.on("request", async (interceptedRequest) => {
         try {
