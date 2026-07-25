@@ -2,6 +2,9 @@
 
 一个基于 Cloudflare Workers、Durable Objects 与 Browser Run 的临时云端浏览器 MVP。
 
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/chatgptuk/cloudbrowser)
+[![Deploy workflow](https://github.com/chatgptuk/cloudbrowser/actions/workflows/deploy.yml/badge.svg)](https://github.com/chatgptuk/cloudbrowser/actions/workflows/deploy.yml)
+
 用户输入公开网址后，Worker 会启动远程 Chrome、导航到目标页面，并返回 Cloudflare Live View 短期访问链接。Durable Object 保存会话元数据并在 10 分钟后强制关闭浏览器。
 
 ## 已实现
@@ -35,6 +38,47 @@ Durable Object (owner)
 
 第一版刻意采用单用户模型：所有受保护 API 都映射到名为 `owner` 的 Durable Object。后续加入多用户认证时，应改为使用稳定的用户 ID 创建 Durable Object。
 
+## 部署方式
+
+两种方式都已提供：
+
+| 方式 | 最适合 | 特点 |
+| --- | --- | --- |
+| **Deploy to Cloudflare 按钮** | 第一次体验、不会使用 GitHub Actions 的用户 | 创建 Worker 最快，但首次部署后仍需在 Cloudflare 中设置三个运行时 Secret |
+| **Fork + GitHub Actions** | 长期维护自己的版本 | 初次多配置一个部署 Token，之后推送到 `main` 会自动检查并部署 |
+
+### 方式一：Deploy to Cloudflare
+
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/chatgptuk/cloudbrowser)
+
+按钮会从这个公开仓库部署名为 `cloudbrowser` 的 Worker。部署完成后，在 Cloudflare Worker 的 **Settings → Variables and Secrets** 中添加：
+
+- `ADMIN_TOKEN`：足够长的随机控制台访问口令
+- `CLOUDFLARE_ACCOUNT_ID`：Cloudflare Account ID
+- `CLOUDFLARE_BROWSER_TOKEN`：仅限当前账户、具有 Browser Rendering 编辑权限的 API Token
+
+设置 Secret 后重新部署一次 Worker。Deploy 按钮不能代替你创建敏感凭证，因此这一步不能安全地完全自动化。
+
+### 方式二：Fork + GitHub Actions
+
+1. [Fork 这个仓库](https://github.com/chatgptuk/cloudbrowser/fork)。
+2. 在 Fork 后的仓库打开 **Settings → Secrets and variables → Actions**。
+3. 添加以下 Repository secrets：
+
+   | Secret | 用途 |
+   | --- | --- |
+   | `CLOUDFLARE_API_TOKEN` | GitHub Actions 部署 Worker；需要 Workers Scripts 编辑权限 |
+   | `CLOUDFLARE_ACCOUNT_ID` | 部署目标账户，同时作为 Worker 运行时 Secret |
+   | `ADMIN_TOKEN` | CloudBrowser 控制台登录口令 |
+   | `CLOUDFLARE_BROWSER_TOKEN` | Worker 生成 Live View 链接和关闭浏览器会话 |
+
+4. 打开 **Actions → Deploy to Cloudflare → Run workflow**。
+5. 首次成功后，每次推送到 `main` 都会自动运行检查并部署。
+
+Fork 不会继承上游仓库的 Secret。缺少配置时，工作流会安全跳过部署，并在 Actions Summary 中列出缺少的名称，不会打印 Secret 内容。
+
+部署按钮更省事；如果准备长期使用或修改代码，推荐 Fork + GitHub Actions。
+
 ## 本地运行
 
 安装依赖：
@@ -55,7 +99,7 @@ npx wrangler dev \
 
 不要把 `BROWSER_MOCK` 写进生产环境配置。
 
-## Cloudflare 配置
+## 手动部署
 
 需要 Workers Paid 计划和 Browser Run。创建一个仅限当前账户的 API Token，并授予 Browser Rendering 编辑权限。
 
@@ -125,3 +169,5 @@ npm run deploy
 - [CDP Session management](https://developers.cloudflare.com/browser-run/cdp/session-management/)
 - [Reuse sessions](https://developers.cloudflare.com/browser-run/features/reuse-sessions/)
 - [Browser Run limits](https://developers.cloudflare.com/browser-run/limits/)
+- [Deploy to Cloudflare buttons](https://developers.cloudflare.com/workers/platform/deploy-buttons/)
+- [Wrangler GitHub Action](https://github.com/cloudflare/wrangler-action)
