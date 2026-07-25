@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow, noarchive" />
+    <meta
+      name="description"
+      content="基于 Cloudflare Workers 与 Browser Run 的临时云端浏览器控制台。"
+    />
+    <meta name="theme-color" content="#07111f" />
+    <title>CloudBrowser — 临时云端浏览器</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles.css?v=20260725a" />
+    <script src="/app.js?v=20260725a" defer></script>
+  </head>
+  <body>
+    <div class="ambient ambient-one" aria-hidden="true"></div>
+    <div class="ambient ambient-two" aria-hidden="true"></div>
+
+    <header class="site-header">
+      <a class="brand" href="/" aria-label="CloudBrowser 首页">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" role="img">
+            <path d="M9.5 24.5h13a6 6 0 0 0 .2-12A8 8 0 0 0 7.5 15a4.8 4.8 0 0 0 2 9.5Z" />
+            <path d="m12.5 18.5 2.4 2.4 5-5.8" />
+          </svg>
+        </span>
+        <span>CloudBrowser</span>
+      </a>
+
+      <div class="header-meta">
+        <span class="status-pill">
+          <span class="status-dot" aria-hidden="true"></span>
+          Cloudflare Edge
+        </span>
+        <button class="text-button hidden" id="logout-button" type="button">退出控制台</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="eyebrow">
+          <span>Browser Run</span>
+          <span class="eyebrow-divider"></span>
+          <span>10 分钟隔离会话</span>
+        </div>
+        <h1>在云端打开网页，<br /><span>用完即走。</span></h1>
+        <p class="hero-copy">
+          Chrome 运行在 Cloudflare 全球网络。页面内容不会经过你的本地设备，会话到期后自动关闭。
+        </p>
+      </section>
+
+      <section class="workspace" aria-label="云端浏览器控制台">
+        <div class="control-card">
+          <div class="card-heading">
+            <div>
+              <p class="section-label">新建会话</p>
+              <h2>你想打开哪个网页？</h2>
+            </div>
+            <span class="timer-chip" id="idle-timer-chip">最长 10:00</span>
+          </div>
+
+          <form id="launch-form" class="launch-form">
+            <label for="target-url">目标网址</label>
+            <div class="url-control">
+              <span class="lock-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M7.5 10V7.8a4.5 4.5 0 0 1 9 0V10" />
+                  <rect x="5" y="10" width="14" height="10" rx="3" />
+                  <path d="M12 14v2.5" />
+                </svg>
+              </span>
+              <input
+                id="target-url"
+                name="url"
+                type="text"
+                inputmode="url"
+                autocomplete="url"
+                spellcheck="false"
+                maxlength="2048"
+                placeholder="https://example.com"
+                required
+              />
+              <button id="launch-button" class="primary-button" type="submit">
+                <span>启动浏览器</span>
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="M4 10h11M11 6l4 4-4 4" />
+                </svg>
+              </button>
+            </div>
+          </form>
+
+          <div id="form-message" class="form-message hidden" role="alert"></div>
+
+          <div class="safety-row">
+            <div>
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 3 5 6v5c0 4.6 2.8 8.2 7 10 4.2-1.8 7-5.4 7-10V6l-7-3Z" />
+                <path d="m9 12 2 2 4-4" />
+              </svg>
+              <span>私有网络与危险端口已拦截</span>
+            </div>
+            <div>
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M5 8h14M9 4h6l1 4H8l1-4ZM7 8l1 12h8l1-12M10 11v6M14 11v6" />
+              </svg>
+              <span>到期自动销毁</span>
+            </div>
+          </div>
+        </div>
+
+        <aside class="session-card" id="session-card" aria-live="polite">
+          <div id="empty-session" class="empty-session">
+            <div class="orbital" aria-hidden="true">
+              <span class="orbital-core">
+                <svg viewBox="0 0 32 32">
+                  <rect x="4" y="6" width="24" height="20" rx="4" />
+                  <path d="M4 11h24M9 8.5h.1M13 8.5h.1" />
+                  <path d="m13 20 3-7 3 7-3-1.5L13 20Z" />
+                </svg>
+              </span>
+            </div>
+            <p class="section-label">会话状态</p>
+            <h2>等待启动</h2>
+            <p>输入公开网址后，云端 Chrome 会在数秒内准备完成。</p>
+          </div>
+
+          <div id="active-session" class="active-session hidden">
+            <div class="session-topline">
+              <span class="live-badge"><i></i> 会话运行中</span>
+              <span id="session-reference" class="session-reference"></span>
+            </div>
+
+            <div class="countdown-wrap">
+              <div class="countdown-ring" id="countdown-ring">
+                <div>
+                  <strong id="countdown-value">10:00</strong>
+                  <span>剩余时间</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="session-destination">
+              <span>当前页面</span>
+              <strong id="session-hostname"></strong>
+              <small id="session-url"></small>
+            </div>
+
+            <div class="session-actions">
+              <a
+                id="open-live-link"
+                class="primary-button wide"
+                href="#"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                打开实时浏览器
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="M7 4h9v9M16 4l-8 8M13 16H4V7" />
+                </svg>
+              </a>
+              <button id="refresh-link-button" class="secondary-button" type="button">
+                刷新访问链接
+              </button>
+              <button id="stop-button" class="danger-button" type="button">
+                结束并销毁
+              </button>
+            </div>
+
+            <p class="session-note">
+              实时访问链接是短期凭证。请勿转发给其他人。
+            </p>
+          </div>
+        </aside>
+      </section>
+
+      <section class="how-it-works" aria-labelledby="how-title">
+        <div class="how-heading">
+          <p class="section-label">工作方式</p>
+          <h2 id="how-title">浏览器在边缘运行，控制权在你手里</h2>
+        </div>
+        <ol class="steps">
+          <li>
+            <span>01</span>
+            <div>
+              <h3>创建隔离会话</h3>
+              <p>Worker 校验网址并启动专属 Browser Run 实例。</p>
+            </div>
+          </li>
+          <li>
+            <span>02</span>
+            <div>
+              <h3>实时安全操作</h3>
+              <p>通过 Cloudflare Live View 直接操控远程页面。</p>
+            </div>
+          </li>
+          <li>
+            <span>03</span>
+            <div>
+              <h3>自动彻底关闭</h3>
+              <p>Durable Object 到时关闭实例，不长期保留浏览状态。</p>
+            </div>
+          </li>
+        </ol>
+      </section>
+
+      <section class="notice">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 10v6M12 7h.01" />
+        </svg>
+        <p>
+          Browser Run 会被网站识别为自动化流量，部分登录、视频或高风控网站可能拒绝访问。
+          本工具不用于绕过验证码、访问控制或网站条款。
+        </p>
+      </section>
+    </main>
+
+    <footer>
+      <span>CloudBrowser MVP</span>
+      <span>Workers · Durable Objects · Browser Run</span>
+    </footer>
+
+    <div class="auth-backdrop" id="auth-backdrop">
+      <section class="auth-card" role="dialog" aria-labelledby="auth-title" aria-modal="true">
+        <div class="auth-icon" aria-hidden="true">
+          <svg viewBox="0 0 32 32">
+            <path d="M9.5 24.5h13a6 6 0 0 0 .2-12A8 8 0 0 0 7.5 15a4.8 4.8 0 0 0 2 9.5Z" />
+            <path d="M12 18h8M16 14v8" />
+          </svg>
+        </div>
+        <p class="section-label">受保护的控制台</p>
+        <h2 id="auth-title">输入访问口令</h2>
+        <p>口令仅保存在当前标签页，不会写入网址或本地持久存储。</p>
+        <form id="auth-form">
+          <label for="access-token">访问口令</label>
+          <input
+            id="access-token"
+            type="password"
+            autocomplete="current-password"
+            placeholder="ADMIN_TOKEN"
+            required
+          />
+          <button id="auth-button" class="primary-button wide" type="submit">
+            进入控制台
+          </button>
+          <div id="auth-message" class="form-message hidden" role="alert"></div>
+        </form>
+      </section>
+    </div>
+  </body>
+</html>
