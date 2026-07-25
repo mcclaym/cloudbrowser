@@ -4,6 +4,7 @@ const state = {
   sessionTtlSeconds: 600,
   countdownInterval: null,
   pollInterval: null,
+  liveUrl: "",
   liveUrlRefreshedAt: 0,
 };
 
@@ -27,9 +28,12 @@ const elements = {
   countdownValue: document.querySelector("#countdown-value"),
   sessionHostname: document.querySelector("#session-hostname"),
   sessionUrl: document.querySelector("#session-url"),
-  openLiveLink: document.querySelector("#open-live-link"),
+  showLiveButton: document.querySelector("#show-live-button"),
   refreshLinkButton: document.querySelector("#refresh-link-button"),
   stopButton: document.querySelector("#stop-button"),
+  browserStage: document.querySelector("#browser-stage"),
+  liveBrowserFrame: document.querySelector("#live-browser-frame"),
+  liveFramePlaceholder: document.querySelector("#live-frame-placeholder"),
 };
 
 class ApiError extends Error {
@@ -99,6 +103,7 @@ function lockConsole() {
   state.token = "";
   sessionStorage.removeItem("cloudbrowser_token");
   stopTimers();
+  clearLiveView();
   elements.authBackdrop.classList.remove("dismissed");
   elements.logoutButton.classList.add("hidden");
   elements.accessToken.value = "";
@@ -116,7 +121,39 @@ function stopTimers() {
   }
 }
 
-function renderSession(session, liveUrls = {}) {
+function clearLiveView() {
+  state.liveUrl = "";
+  state.liveUrlRefreshedAt = 0;
+  elements.liveBrowserFrame.removeAttribute("src");
+  elements.liveBrowserFrame.classList.add("hidden");
+  elements.liveFramePlaceholder.classList.remove("hidden");
+  elements.browserStage.classList.add("hidden");
+}
+
+function setLiveViewUrl(liveUrl, reloadFrame = false) {
+  let url;
+  try {
+    url = new URL(liveUrl);
+  } catch {
+    throw new Error("Cloudflare 返回了无效的 Live View 地址。");
+  }
+
+  if (url.protocol !== "https:" || url.hostname !== "live.browser.run") {
+    throw new Error("Cloudflare 返回了非预期的 Live View 地址。");
+  }
+
+  state.liveUrl = url.toString();
+  state.liveUrlRefreshedAt = Date.now();
+  elements.browserStage.classList.remove("hidden");
+
+  if (reloadFrame || !elements.liveBrowserFrame.hasAttribute("src")) {
+    elements.liveBrowserFrame.classList.add("hidden");
+    elements.liveFramePlaceholder.classList.remove("hidden");
+    elements.liveBrowserFrame.src = state.liveUrl;
+  }
+}
+
+function renderSession(session, liveUrls = {}, options = {}) {
   state.session = session?.active ? session : null;
 
   if (!state.session) {
@@ -125,7 +162,7 @@ function renderSession(session, liveUrls = {}) {
     elements.launchButton.disabled = false;
     elements.targetUrl.disabled = false;
     elements.idleTimerChip.textContent = `最长 ${formatDuration(state.sessionTtlSeconds)}`;
-    elements.openLiveLink.href = "#";
+    clearLiveView();
     return;
   }
 
@@ -143,8 +180,7 @@ function renderSession(session, liveUrls = {}) {
   }
 
   if (liveUrls.liveUrl) {
-    elements.openLiveLink.href = liveUrls.liveUrl;
-    state.liveUrlRefreshedAt = Date.now();
+    setLiveViewUrl(liveUrls.liveUrl, options.reloadLiveFrame);
   }
 
   updateCountdown();
@@ -220,16 +256,18 @@ async function refreshStatus() {
   }
 }
 
-async function refreshLiveUrl(showFeedback = true) {
+async function refreshLiveUrl(showFeedback = true, reloadFrame = showFeedback) {
   elements.refreshLinkButton.disabled = true;
   try {
     const result = await api("/api/session/live-url", { method: "POST" });
-    renderSession(result, result);
+    renderSession(result, result, { reloadLiveFrame: reloadFrame });
     if (showFeedback) {
-      showMessage(elements.formMessage, "实时访问链接已刷新。", "success");
+      showMessage(elements.formMessage, "嵌入画面已重新连接。", "success");
     }
+    return result;
   } catch (error) {
     showMessage(elements.formMessage, error.message);
+    return null;
   } finally {
     elements.refreshLinkButton.disabled = false;
   }
@@ -274,14 +312,15 @@ elements.launchForm.addEventListener("submit", async (event) => {
       method: "POST",
       body: JSON.stringify({ url: elements.targetUrl.value }),
     });
-    renderSession(result, result);
+    renderSession(result, result, { reloadLiveFrame: true });
     showMessage(
       elements.formMessage,
       result.mock
         ? "本地模拟会话已启动。"
-        : "云端浏览器已准备完成，可以打开实时页面。",
+        : "云端浏览器已准备完成，实时画面已嵌入下方。",
       "success",
     );
+    elements.browserStage.scrollIntoView({ behavior: "smooth", block: "start" });
   } catch (error) {
     showMessage(elements.formMessage, error.message);
     elements.launchButton.disabled = false;
@@ -297,7 +336,19 @@ elements.launchForm.addEventListener("submit", async (event) => {
 
 elements.refreshLinkButton.addEventListener("click", () => {
   clearMessage(elements.formMessage);
-  void refreshLiveUrl(true);
+  void refreshLiveUrl(true, true);
+});
+
+elements.showLiveButton.addEventListener("click", async () => {
+  clearMessage(elements.formMessage);
+  if (!state.liveUrl) {
+    const result = await refreshLiveUrl(false, true);
+    if (!result) {
+      return;
+    }
+  }
+  elements.browserStage.classList.remove("hidden");
+  elements.browserStage.scrollIntoView({ behavior: "smooth", block: "start" });
 });
 
 elements.stopButton.addEventListener("click", async () => {
@@ -317,6 +368,11 @@ elements.stopButton.addEventListener("click", async () => {
 
 elements.logoutButton.addEventListener("click", () => {
   lockConsole();
+});
+
+elements.liveBrowserFrame.addEventListener("load", () => {
+  elements.liveFramePlaceholder.classList.add("hidden");
+  elements.liveBrowserFrame.classList.remove("hidden");
 });
 
 document.addEventListener("visibilitychange", () => {

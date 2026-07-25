@@ -12,6 +12,7 @@
 - 单用户 Bearer 口令保护，口令仅保存在浏览器 `sessionStorage`
 - Browser Run binding 创建远程 Chrome
 - Live View 普通页面与 DevTools 链接生成
+- `live.browser.run` 实时画面直接嵌入控制台
 - Durable Object 会话复用、状态查询、定时销毁
 - 手动结束与 Cloudflare CDP Session API 关闭
 - 仅允许 HTTP/HTTPS、80/443 端口
@@ -141,7 +142,7 @@ npm run deploy
 2. 错误口令无法查看或结束当前会话。
 3. `localhost`、`127.0.0.1`、`169.254.169.254`、私有 IPv4/IPv6 和非标准端口被拒绝。
 4. `https://example.com` 可以创建会话。
-5. “打开实时浏览器”进入 `live.browser.run`，且 API Token 不出现在页面或网络响应里。
+5. 控制台内嵌的实时浏览器加载自 `live.browser.run`，且 API Token 不出现在页面或网络响应里。
 6. “结束并销毁”后 Live View 不再可用。
 7. 到达 `BROWSER_SESSION_TTL_SECONDS` 配置的时间后，Durable Object alarm 会关闭会话。
 8. Cloudflare Browser Run 仪表板没有异常遗留会话。

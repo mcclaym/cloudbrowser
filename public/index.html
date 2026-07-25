@@ -11,8 +11,8 @@
     <meta name="theme-color" content="#07111f" />
     <title>CloudBrowser — 临时云端浏览器</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="/styles.css?v=20260725b" />
-    <script src="/app.js?v=20260725b" defer></script>
+    <link rel="stylesheet" href="/styles.css?v=20260725c" />
+    <script src="/app.js?v=20260725c" defer></script>
   </head>
   <body>
     <div class="ambient ambient-one" aria-hidden="true"></div>
@@ -148,20 +148,18 @@
             </div>
 
             <div class="session-actions">
-              <a
-                id="open-live-link"
+              <button
+                id="show-live-button"
                 class="primary-button wide"
-                href="#"
-                target="_blank"
-                rel="noopener noreferrer"
+                type="button"
               >
-                打开实时浏览器
+                查看实时浏览器
                 <svg viewBox="0 0 20 20" aria-hidden="true">
-                  <path d="M7 4h9v9M16 4l-8 8M13 16H4V7" />
+                  <path d="M10 4v11M6 11l4 4 4-4" />
                 </svg>
-              </a>
+              </button>
               <button id="refresh-link-button" class="secondary-button" type="button">
-                刷新访问链接
+                重新连接画面
               </button>
               <button id="stop-button" class="danger-button" type="button">
                 结束并销毁
@@ -173,6 +171,41 @@
             </p>
           </div>
         </aside>
+      </section>
+
+      <section
+        class="browser-stage hidden"
+        id="browser-stage"
+        aria-labelledby="browser-stage-title"
+      >
+        <div class="browser-stage-toolbar">
+          <div>
+            <p class="section-label">Live View</p>
+            <h2 id="browser-stage-title">
+              <span class="stage-status-dot" aria-hidden="true"></span>
+              实时云端浏览器
+            </h2>
+          </div>
+        </div>
+
+        <div class="browser-frame-shell">
+          <div class="live-frame-placeholder" id="live-frame-placeholder">
+            <span class="frame-loader" aria-hidden="true"></span>
+            <strong>正在连接远程浏览器…</strong>
+            <small>画面由 Cloudflare Live View 安全传输</small>
+          </div>
+          <iframe
+            id="live-browser-frame"
+            class="hidden"
+            title="Cloudflare Live View 实时云端浏览器"
+            referrerpolicy="no-referrer"
+            allowfullscreen
+          ></iframe>
+        </div>
+
+        <p class="browser-stage-note">
+          实时链接包含短期访问凭证。会话关闭或退出控制台时，嵌入画面会立即清除。
+        </p>
       </section>
 
       <section class="how-it-works" aria-labelledby="how-title">
