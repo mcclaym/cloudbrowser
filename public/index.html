@@ -1,463 +1,687 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="robots" content="noindex, nofollow, noarchive" />
     <meta
       name="description"
-      content="基于 Cloudflare Workers 与 Browser Run 的临时云端浏览器控制台。"
+      content="CloudBrowser — 运行在 Cloudflare 边缘网络的临时云端浏览器控制台。"
     />
-    <meta name="theme-color" content="#07111f" />
-    <title>CloudBrowser — 临时云端浏览器</title>
+    <meta name="color-scheme" content="dark light" />
+    <meta name="theme-color" content="#080b14" />
+    <title>CloudBrowser 控制台</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="/styles.css?v=20260725e" />
-    <script src="/app.js?v=20260725e" defer></script>
+    <link rel="stylesheet" href="/styles/tokens.css?v=2" />
+    <link rel="stylesheet" href="/styles/base.css?v=2" />
+    <link rel="stylesheet" href="/styles/app.css?v=2" />
+    <script type="module" src="/js/main.js?v=2"></script>
   </head>
   <body>
-    <div class="ambient ambient-one" aria-hidden="true"></div>
-    <div class="ambient ambient-two" aria-hidden="true"></div>
+    <svg class="icon-defs" aria-hidden="true" focusable="false">
+      <defs>
+        <symbol id="i-cloud" viewBox="0 0 24 24">
+          <path d="M7 18.5h10a4.5 4.5 0 0 0 .3-9A6.5 6.5 0 0 0 5.2 11 3.8 3.8 0 0 0 7 18.5Z" />
+        </symbol>
+        <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" /></symbol>
+        <symbol id="i-forward" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" /></symbol>
+        <symbol id="i-reload" viewBox="0 0 24 24">
+          <path d="M20 12a8 8 0 1 1-2.3-5.6" /><path d="M20 4v5h-5" />
+        </symbol>
+        <symbol id="i-lock" viewBox="0 0 24 24">
+          <rect x="5" y="10" width="14" height="10" rx="3" />
+          <path d="M8 10V7.5a4 4 0 0 1 8 0V10" />
+        </symbol>
+        <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></symbol>
+        <symbol id="i-camera" viewBox="0 0 24 24">
+          <path d="M4 8h3l1.5-2h7L17 8h3v11H4z" /><circle cx="12" cy="13" r="3.5" />
+        </symbol>
+        <symbol id="i-file" viewBox="0 0 24 24">
+          <path d="M14 3H7v18h10V7l-3-4Z" /><path d="M14 3v4h3" />
+        </symbol>
+        <symbol id="i-text" viewBox="0 0 24 24">
+          <path d="M5 6h14M5 11h14M5 16h9" />
+        </symbol>
+        <symbol id="i-clock" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" />
+        </symbol>
+        <symbol id="i-expand" viewBox="0 0 24 24">
+          <path d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5" />
+        </symbol>
+        <symbol id="i-external" viewBox="0 0 24 24">
+          <path d="M14 4h6v6M20 4l-8 8" />
+          <path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />
+        </symbol>
+        <symbol id="i-power" viewBox="0 0 24 24">
+          <path d="M12 4v8" /><path d="M7.5 7a7 7 0 1 0 9 0" />
+        </symbol>
+        <symbol id="i-sliders" viewBox="0 0 24 24">
+          <path d="M4 8h10M18 8h2M4 16h4M12 16h8" />
+          <circle cx="16" cy="8" r="2" /><circle cx="10" cy="16" r="2" />
+        </symbol>
+        <symbol id="i-search" viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="6.5" /><path d="m16 16 4 4" />
+        </symbol>
+        <symbol id="i-sun" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="4" />
+          <path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6 17 7M7 17l-1.4 1.4" />
+        </symbol>
+        <symbol id="i-moon" viewBox="0 0 24 24">
+          <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z" />
+        </symbol>
+        <symbol id="i-globe" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="8.5" /><path d="M3.5 12h17M12 3.5c2.5 2.6 2.5 14.4 0 17M12 3.5c-2.5 2.6-2.5 14.4 0 17" />
+        </symbol>
+        <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18" /></symbol>
+        <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 13 4 4 10-11" /></symbol>
+        <symbol id="i-alert" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="8.5" /><path d="M12 8v5M12 16h.01" />
+        </symbol>
+        <symbol id="i-copy" viewBox="0 0 24 24">
+          <rect x="9" y="9" width="11" height="11" rx="2" />
+          <path d="M15 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3" />
+        </symbol>
+        <symbol id="i-keyboard" viewBox="0 0 24 24">
+          <rect x="3" y="6" width="18" height="12" rx="2" />
+          <path d="M7 10h.01M11 10h.01M15 10h.01M8 14h8" />
+        </symbol>
+        <symbol id="i-trash" viewBox="0 0 24 24">
+          <path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13" />
+        </symbol>
+        <symbol id="i-panel" viewBox="0 0 24 24">
+          <rect x="3" y="5" width="18" height="14" rx="2" /><path d="M9 5v14" />
+        </symbol>
+      </defs>
+    </svg>
 
-    <header class="site-header">
-      <a class="brand" href="/" aria-label="CloudBrowser 首页">
-        <span class="brand-mark" aria-hidden="true">
-          <svg viewBox="0 0 32 32" role="img">
-            <path d="M9.5 24.5h13a6 6 0 0 0 .2-12A8 8 0 0 0 7.5 15a4.8 4.8 0 0 0 2 9.5Z" />
-            <path d="m12.5 18.5 2.4 2.4 5-5.8" />
-          </svg>
-        </span>
-        <span>CloudBrowser</span>
-      </a>
-
-      <div class="header-meta">
-        <span class="status-pill">
-          <span class="status-dot" aria-hidden="true"></span>
-          Cloudflare Edge
-        </span>
-        <button class="text-button hidden" id="logout-button" type="button">退出控制台</button>
-      </div>
-    </header>
-
-    <main>
-      <section class="hero">
-        <div class="eyebrow">
-          <span>Browser Run</span>
-          <span class="eyebrow-divider"></span>
-          <span id="session-duration-label">10 分钟隔离会话</span>
-        </div>
-        <h1>在云端打开网页，<br /><span>用完即走。</span></h1>
-        <p class="hero-copy">
-          Chrome 运行在 Cloudflare 全球网络。页面内容不会经过你的本地设备，会话到期后自动关闭。
-        </p>
-      </section>
-
-      <section class="workspace" aria-label="云端浏览器控制台">
-        <div class="control-card">
-          <div class="card-heading">
-            <div>
-              <p class="section-label">新建会话</p>
-              <h2>你想打开哪个网页？</h2>
-            </div>
-            <span class="timer-chip" id="idle-timer-chip">最长 10:00</span>
-          </div>
-
-          <form id="launch-form" class="launch-form">
-            <label for="target-url">目标网址</label>
-            <div class="url-control">
-              <span class="lock-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24">
-                  <path d="M7.5 10V7.8a4.5 4.5 0 0 1 9 0V10" />
-                  <rect x="5" y="10" width="14" height="10" rx="3" />
-                  <path d="M12 14v2.5" />
-                </svg>
-              </span>
-              <input
-                id="target-url"
-                name="url"
-                type="text"
-                inputmode="url"
-                autocomplete="url"
-                spellcheck="false"
-                maxlength="2048"
-                placeholder="https://example.com"
-                required
-              />
-              <button id="launch-button" class="primary-button" type="submit">
-                <span>启动浏览器</span>
-                <svg viewBox="0 0 20 20" aria-hidden="true">
-                  <path d="M4 10h11M11 6l4 4-4 4" />
-                </svg>
-              </button>
-            </div>
-
-            <details class="browser-settings" id="browser-settings">
-              <summary>
-                <span>
-                  <strong>浏览器设置</strong>
-                  <small id="settings-summary">1920 × 1080 · 默认 UA · 系统配色</small>
-                </span>
-                <svg viewBox="0 0 20 20" aria-hidden="true">
-                  <path d="m6 8 4 4 4-4" />
-                </svg>
-              </summary>
-
-              <fieldset id="browser-settings-fields">
-                <div class="settings-grid">
-                  <label class="settings-field" for="viewport-preset">
-                    <span>窗口 / 视口</span>
-                    <select id="viewport-preset">
-                      <option value="desktop-large">桌面最大化 — 1920 × 1080</option>
-                      <option value="desktop-laptop">笔记本 — 1366 × 768</option>
-                      <option value="tablet">平板 — 1024 × 768</option>
-                      <option value="mobile">手机 — 390 × 844</option>
-                      <option value="custom">自定义尺寸</option>
-                    </select>
-                  </label>
-
-                  <label class="settings-field" for="browser-locale">
-                    <span>语言</span>
-                    <select id="browser-locale">
-                      <option value="">Browser Run 默认</option>
-                      <option value="zh-CN">简体中文（zh-CN）</option>
-                      <option value="en-US">English (en-US)</option>
-                      <option value="ja-JP">日本語（ja-JP）</option>
-                      <option value="ko-KR">한국어（ko-KR）</option>
-                      <option value="fr-FR">Français (fr-FR)</option>
-                      <option value="de-DE">Deutsch (de-DE)</option>
-                    </select>
-                  </label>
-
-                  <div class="custom-viewport hidden" id="custom-viewport">
-                    <label class="settings-field" for="viewport-width">
-                      <span>宽度</span>
-                      <input
-                        id="viewport-width"
-                        type="number"
-                        min="320"
-                        max="1920"
-                        step="1"
-                        value="1920"
-                      />
-                    </label>
-                    <label class="settings-field" for="viewport-height">
-                      <span>高度</span>
-                      <input
-                        id="viewport-height"
-                        type="number"
-                        min="480"
-                        max="1080"
-                        step="1"
-                        value="1080"
-                      />
-                    </label>
-                    <label class="check-field">
-                      <input id="mobile-emulation" type="checkbox" />
-                      <span>移动设备与触摸模式</span>
-                    </label>
-                  </div>
-
-                  <label class="settings-field" for="browser-timezone">
-                    <span>时区</span>
-                    <select id="browser-timezone">
-                      <option value="">Browser Run 默认</option>
-                      <option value="UTC">UTC</option>
-                      <option value="America/Vancouver">温哥华</option>
-                      <option value="America/Los_Angeles">洛杉矶</option>
-                      <option value="America/New_York">纽约</option>
-                      <option value="Europe/London">伦敦</option>
-                      <option value="Europe/Paris">巴黎</option>
-                      <option value="Asia/Shanghai">上海 / 北京</option>
-                      <option value="Asia/Hong_Kong">香港</option>
-                      <option value="Asia/Tokyo">东京</option>
-                      <option value="Asia/Singapore">新加坡</option>
-                      <option value="Australia/Sydney">悉尼</option>
-                    </select>
-                  </label>
-
-                  <label class="settings-field" for="color-scheme">
-                    <span>网页配色</span>
-                    <select id="color-scheme">
-                      <option value="system">跟随系统</option>
-                      <option value="light">浅色模式</option>
-                      <option value="dark">深色模式</option>
-                    </select>
-                  </label>
-
-                  <label class="settings-field settings-field-wide" for="custom-user-agent">
-                    <span>自定义 User-Agent</span>
-                    <input
-                      id="custom-user-agent"
-                      type="text"
-                      maxlength="512"
-                      autocomplete="off"
-                      spellcheck="false"
-                      placeholder="留空则使用 Browser Run 默认 UA"
-                    />
-                  </label>
-                </div>
-
-                <div class="location-setting">
-                  <label class="check-field">
-                    <input id="geolocation-toggle" type="checkbox" />
-                    <span>覆盖网页定位</span>
-                  </label>
-                  <div class="geolocation-fields hidden" id="geolocation-fields">
-                    <label class="settings-field" for="geo-latitude">
-                      <span>纬度</span>
-                      <input
-                        id="geo-latitude"
-                        type="number"
-                        min="-90"
-                        max="90"
-                        step="any"
-                        value="49.2827"
-                      />
-                    </label>
-                    <label class="settings-field" for="geo-longitude">
-                      <span>经度</span>
-                      <input
-                        id="geo-longitude"
-                        type="number"
-                        min="-180"
-                        max="180"
-                        step="any"
-                        value="-123.1207"
-                      />
-                    </label>
-                    <label class="settings-field" for="geo-accuracy">
-                      <span>精度（米）</span>
-                      <input
-                        id="geo-accuracy"
-                        type="number"
-                        min="0"
-                        max="10000"
-                        step="1"
-                        value="25"
-                      />
-                    </label>
-                  </div>
-                </div>
-
-                <p class="settings-note">
-                  设置会在首次导航前应用；仅保存在本机浏览器中，不会写入网址或长期保存在服务端。
-                </p>
-              </fieldset>
-            </details>
-          </form>
-
-          <div id="form-message" class="form-message hidden" role="alert"></div>
-
-          <div class="safety-row">
-            <div>
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M12 3 5 6v5c0 4.6 2.8 8.2 7 10 4.2-1.8 7-5.4 7-10V6l-7-3Z" />
-                <path d="m9 12 2 2 4-4" />
-              </svg>
-              <span>私有网络与危险端口已拦截</span>
-            </div>
-            <div>
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M5 8h14M9 4h6l1 4H8l1-4ZM7 8l1 12h8l1-12M10 11v6M14 11v6" />
-              </svg>
-              <span>到期自动销毁</span>
-            </div>
-          </div>
+    <div class="app" id="app" hidden>
+      <div class="rail-scrim" id="rail-scrim" hidden></div>
+      <aside class="rail" id="rail">
+        <div class="rail-top">
+          <a class="brand" href="/" aria-label="CloudBrowser">
+            <span class="brand-mark"><svg><use href="#i-cloud" /></svg></span>
+            <span class="brand-text">
+              <strong>CloudBrowser</strong>
+              <small data-i18n="brand.tagline">边缘临时浏览器</small>
+            </span>
+          </a>
+          <button
+            class="icon-button rail-toggle"
+            id="rail-toggle"
+            type="button"
+            data-i18n-attr="title:rail.toggle,aria-label:rail.toggle"
+          >
+            <svg><use href="#i-panel" /></svg>
+          </button>
         </div>
 
-        <aside class="session-card" id="session-card" aria-live="polite">
-          <div id="empty-session" class="empty-session">
-            <div class="orbital" aria-hidden="true">
-              <span class="orbital-core">
-                <svg viewBox="0 0 32 32">
-                  <rect x="4" y="6" width="24" height="20" rx="4" />
-                  <path d="M4 11h24M9 8.5h.1M13 8.5h.1" />
-                  <path d="m13 20 3-7 3 7-3-1.5L13 20Z" />
-                </svg>
-              </span>
-            </div>
-            <p class="section-label">会话状态</p>
-            <h2>等待启动</h2>
-            <p>输入公开网址后，云端 Chrome 会在数秒内准备完成。</p>
-          </div>
+        <button class="primary-button new-session" id="new-session-button" type="button">
+          <svg><use href="#i-plus" /></svg>
+          <span data-i18n="rail.newSession">新建会话</span>
+          <kbd>N</kbd>
+        </button>
 
-          <div id="active-session" class="active-session hidden">
-            <div class="session-topline">
-              <span class="live-badge"><i></i> 会话运行中</span>
-              <span id="session-reference" class="session-reference"></span>
-            </div>
-
-            <div class="countdown-wrap">
-              <div class="countdown-ring" id="countdown-ring">
-                <div>
-                  <strong id="countdown-value">10:00</strong>
-                  <span>剩余时间</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="session-destination">
-              <span>当前页面</span>
-              <strong id="session-hostname"></strong>
-              <small id="session-url"></small>
-            </div>
-
-            <div class="session-actions">
-              <button
-                id="show-live-button"
-                class="primary-button wide"
-                type="button"
-              >
-                查看实时浏览器
-                <svg viewBox="0 0 20 20" aria-hidden="true">
-                  <path d="M10 4v11M6 11l4 4 4-4" />
-                </svg>
-              </button>
-              <button id="refresh-link-button" class="secondary-button" type="button">
-                重新连接画面
-              </button>
-              <button id="stop-button" class="danger-button" type="button">
-                结束并销毁
-              </button>
-            </div>
-
-            <p class="session-note">
-              实时访问链接是短期凭证。请勿转发给其他人。
-            </p>
-          </div>
-        </aside>
-      </section>
-
-      <section
-        class="browser-stage hidden"
-        id="browser-stage"
-        aria-labelledby="browser-stage-title"
-      >
-        <div class="browser-stage-toolbar">
-          <div>
-            <p class="section-label">Live View</p>
-            <h2 id="browser-stage-title">
-              <span class="stage-status-dot" aria-hidden="true"></span>
-              实时云端浏览器
+        <div class="rail-scroll">
+          <section class="rail-section">
+            <h2 class="rail-title">
+              <span data-i18n="rail.sessions">运行中的会话</span>
+              <span class="rail-count" id="session-count">0</span>
             </h2>
+            <ul class="session-list" id="session-list"></ul>
+            <p class="rail-empty" id="session-list-empty" data-i18n="rail.noSessions">
+              还没有会话，先启动一个。
+            </p>
+          </section>
+
+          <section class="rail-section">
+            <h2 class="rail-title">
+              <span data-i18n="rail.recent">最近访问</span>
+              <button
+                class="ghost-button tiny"
+                id="clear-history-button"
+                type="button"
+                data-i18n="rail.clear"
+              >
+                清除
+              </button>
+            </h2>
+            <ul class="history-list" id="history-list"></ul>
+            <p class="rail-empty" id="history-empty" data-i18n="rail.noRecent">
+              这里会保存本机最近打开过的网址。
+            </p>
+          </section>
+        </div>
+
+        <div class="rail-bottom">
+          <div class="capacity" id="capacity" hidden>
+            <div class="capacity-head">
+              <span data-i18n="rail.capacity">Browser Run 配额</span>
+              <span id="capacity-value">—</span>
+            </div>
+            <div class="meter"><div class="meter-fill" id="capacity-meter"></div></div>
           </div>
-          <div class="browser-stage-actions">
-            <a
-              id="open-live-tab-link"
-              class="stage-action-button"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-disabled="true"
-            >
-              <svg viewBox="0 0 20 20" aria-hidden="true">
-                <path d="M11 4h5v5M9 11l7-7M15 11v4a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h4" />
-              </svg>
-              <span>新标签页打开</span>
-            </a>
+          <div class="rail-tools">
             <button
-              id="fullscreen-live-button"
-              class="stage-action-button"
+              class="icon-button"
+              id="rail-settings-button"
               type="button"
+              data-i18n-attr="title:launcher.settings,aria-label:launcher.settings"
             >
-              <svg viewBox="0 0 20 20" aria-hidden="true">
-                <path d="M7 3H3v4M13 3h4v4M7 17H3v-4M13 17h4v-4" />
-              </svg>
-              <span>全屏显示</span>
+              <svg><use href="#i-sliders" /></svg>
+            </button>
+            <button
+              class="icon-button"
+              id="theme-button"
+              type="button"
+              data-i18n-attr="title:tools.theme,aria-label:tools.theme"
+            >
+              <svg class="theme-icon-dark"><use href="#i-moon" /></svg>
+              <svg class="theme-icon-light"><use href="#i-sun" /></svg>
+            </button>
+            <button
+              class="icon-button"
+              id="lang-button"
+              type="button"
+              data-i18n-attr="title:tools.language,aria-label:tools.language"
+            >
+              <svg><use href="#i-globe" /></svg>
+            </button>
+            <button
+              class="icon-button"
+              id="shortcuts-button"
+              type="button"
+              data-i18n-attr="title:tools.shortcuts,aria-label:tools.shortcuts"
+            >
+              <svg><use href="#i-keyboard" /></svg>
+            </button>
+            <button
+              class="icon-button danger"
+              id="logout-button"
+              type="button"
+              data-i18n-attr="title:tools.logout,aria-label:tools.logout"
+            >
+              <svg><use href="#i-power" /></svg>
             </button>
           </div>
         </div>
+      </aside>
 
-        <div class="browser-frame-shell">
-          <div class="live-frame-placeholder" id="live-frame-placeholder">
-            <span class="frame-loader" aria-hidden="true"></span>
-            <strong>正在连接远程浏览器…</strong>
-            <small>画面由 Cloudflare Live View 安全传输</small>
+      <main class="workspace">
+        <header class="chrome">
+          <div class="chrome-nav">
+            <button
+              class="icon-button mobile-only"
+              id="rail-open"
+              type="button"
+              data-i18n-attr="title:rail.toggle,aria-label:rail.toggle"
+            >
+              <svg><use href="#i-panel" /></svg>
+            </button>
+            <button
+              class="icon-button"
+              id="nav-back"
+              type="button"
+              data-i18n-attr="title:chrome.back,aria-label:chrome.back"
+            >
+              <svg><use href="#i-back" /></svg>
+            </button>
+            <button
+              class="icon-button"
+              id="nav-forward"
+              type="button"
+              data-i18n-attr="title:chrome.forward,aria-label:chrome.forward"
+            >
+              <svg><use href="#i-forward" /></svg>
+            </button>
+            <button
+              class="icon-button"
+              id="nav-reload"
+              type="button"
+              data-i18n-attr="title:chrome.reload,aria-label:chrome.reload"
+            >
+              <svg><use href="#i-reload" /></svg>
+            </button>
           </div>
-          <iframe
-            id="live-browser-frame"
-            class="hidden"
-            title="Cloudflare Live View 实时云端浏览器"
-            referrerpolicy="no-referrer"
-            allowfullscreen
-          ></iframe>
-        </div>
 
-        <p class="browser-stage-note">
-          实时链接包含短期访问凭证。会话关闭或退出控制台时，嵌入画面会立即清除。
+          <form class="omnibox" id="omnibox-form" autocomplete="off">
+            <span class="omnibox-icon"><svg><use href="#i-lock" /></svg></span>
+            <input
+              id="omnibox"
+              type="text"
+              inputmode="url"
+              spellcheck="false"
+              maxlength="2048"
+              data-i18n-attr="placeholder:chrome.placeholder,aria-label:chrome.placeholder"
+              placeholder="输入网址后回车，在当前会话中打开"
+            />
+            <span class="omnibox-badge" id="omnibox-badge" hidden></span>
+            <button class="omnibox-go" id="omnibox-go" type="submit">
+              <svg><use href="#i-forward" /></svg>
+            </button>
+          </form>
+
+          <div class="chrome-actions">
+            <button
+              class="icon-button"
+              id="action-screenshot"
+              type="button"
+              data-i18n-attr="title:chrome.screenshot,aria-label:chrome.screenshot"
+            >
+              <svg><use href="#i-camera" /></svg>
+            </button>
+            <button
+              class="icon-button"
+              id="action-pdf"
+              type="button"
+              data-i18n-attr="title:chrome.pdf,aria-label:chrome.pdf"
+            >
+              <svg><use href="#i-file" /></svg>
+            </button>
+            <button
+              class="icon-button"
+              id="action-extract"
+              type="button"
+              data-i18n-attr="title:chrome.extract,aria-label:chrome.extract"
+            >
+              <svg><use href="#i-text" /></svg>
+            </button>
+            <button
+              class="icon-button"
+              id="action-extend"
+              type="button"
+              data-i18n-attr="title:chrome.extend,aria-label:chrome.extend"
+            >
+              <svg><use href="#i-clock" /></svg>
+            </button>
+            <span class="chrome-divider"></span>
+            <a
+              class="icon-button"
+              id="action-open-tab"
+              target="_blank"
+              rel="noopener noreferrer"
+              data-i18n-attr="title:chrome.openTab,aria-label:chrome.openTab"
+            >
+              <svg><use href="#i-external" /></svg>
+            </a>
+            <button
+              class="icon-button"
+              id="action-fullscreen"
+              type="button"
+              data-i18n-attr="title:chrome.fullscreen,aria-label:chrome.fullscreen"
+            >
+              <svg><use href="#i-expand" /></svg>
+            </button>
+            <button
+              class="icon-button danger"
+              id="action-stop"
+              type="button"
+              data-i18n-attr="title:chrome.stop,aria-label:chrome.stop"
+            >
+              <svg><use href="#i-power" /></svg>
+            </button>
+          </div>
+        </header>
+
+        <section class="stage" id="stage">
+          <div class="stage-frames" id="stage-frames"></div>
+
+          <div class="launcher" id="launcher">
+            <div class="launcher-card">
+              <button
+                class="icon-button launcher-close"
+                id="launcher-close"
+                type="button"
+                hidden
+                data-i18n-attr="title:common.close,aria-label:common.close"
+              >
+                <svg><use href="#i-close" /></svg>
+              </button>
+              <div class="launcher-head">
+                <span class="pill">
+                  <span class="pill-dot"></span>
+                  <span data-i18n="launcher.pill">Cloudflare Browser Run</span>
+                </span>
+                <h1 data-i18n="launcher.title">在云端打开网页，用完即走</h1>
+                <p data-i18n="launcher.subtitle">
+                  远程 Chrome 运行在 Cloudflare 全球网络，页面内容不经过本机，到期自动销毁。
+                </p>
+              </div>
+
+              <form class="launch-form" id="launch-form">
+                <div class="launch-input">
+                  <svg class="launch-input-icon"><use href="#i-search" /></svg>
+                  <input
+                    id="launch-url"
+                    type="text"
+                    inputmode="url"
+                    spellcheck="false"
+                    maxlength="2048"
+                    required
+                    data-i18n-attr="placeholder:launcher.placeholder"
+                    placeholder="https://example.com"
+                  />
+                  <button class="primary-button" id="launch-button" type="submit">
+                    <span data-i18n="launcher.launch">启动浏览器</span>
+                  </button>
+                </div>
+
+                <div class="preset-row" id="device-presets" role="group"></div>
+
+                <div class="launch-meta">
+                  <button
+                    class="ghost-button"
+                    id="open-settings-button"
+                    type="button"
+                  >
+                    <svg><use href="#i-sliders" /></svg>
+                    <span data-i18n="launcher.settings">浏览器设置</span>
+                    <small id="settings-summary"></small>
+                  </button>
+                  <span class="launch-hint" id="launch-hint"></span>
+                </div>
+              </form>
+
+              <div class="quick-links-block">
+                <span class="quick-links-label" id="quick-links-label"></span>
+                <ul class="quick-links" id="quick-links"></ul>
+              </div>
+
+              <div class="assurances">
+                <div>
+                  <svg><use href="#i-lock" /></svg>
+                  <span data-i18n="launcher.assurance1">私网与危险端口已拦截</span>
+                </div>
+                <div>
+                  <svg><use href="#i-clock" /></svg>
+                  <span data-i18n="launcher.assurance2">到期自动销毁</span>
+                </div>
+                <div>
+                  <svg><use href="#i-cloud" /></svg>
+                  <span data-i18n="launcher.assurance3">可选出口区域与设备模拟</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="stage-loading" id="stage-loading" hidden>
+            <div class="loader-ring"></div>
+            <strong id="loading-title" data-i18n="stage.loadingTitle">正在启动云端浏览器…</strong>
+            <ol class="loading-steps" id="loading-steps">
+              <li data-step="validate" data-i18n="stage.step1">校验目标网址</li>
+              <li data-step="launch" data-i18n="stage.step2">分配远程 Chrome</li>
+              <li data-step="navigate" data-i18n="stage.step3">导航并建立实时画面</li>
+            </ol>
+          </div>
+        </section>
+
+        <footer class="statusbar" id="statusbar">
+          <div class="status-left">
+            <span class="status-item" id="status-state">
+              <span class="status-dot"></span>
+              <span data-i18n="status.idle">空闲</span>
+            </span>
+            <span class="status-item mono" id="status-ref"></span>
+            <span class="status-item" id="status-device"></span>
+            <span class="status-item" id="status-region"></span>
+          </div>
+          <div class="status-right">
+            <span class="status-item" id="status-countdown"></span>
+            <button class="ghost-button tiny" id="status-palette" type="button">
+              <svg><use href="#i-search" /></svg>
+              <span data-i18n="status.palette">命令面板</span>
+              <kbd>K</kbd>
+            </button>
+          </div>
+        </footer>
+      </main>
+    </div>
+
+    <div class="drawer-backdrop" id="drawer-backdrop" hidden></div>
+    <aside
+      class="drawer"
+      id="settings-drawer"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="drawer-title"
+      hidden
+    >
+      <header class="drawer-head">
+        <div>
+          <p class="eyebrow" data-i18n="drawer.eyebrow">启动前生效</p>
+          <h2 id="drawer-title" data-i18n="drawer.title">浏览器设置</h2>
+        </div>
+        <button
+          class="icon-button"
+          id="drawer-close"
+          type="button"
+          data-i18n-attr="aria-label:common.close"
+        >
+          <svg><use href="#i-close" /></svg>
+        </button>
+      </header>
+
+      <form class="drawer-body" id="settings-form">
+        <fieldset class="field-group">
+          <legend data-i18n="drawer.device">设备与视口</legend>
+          <label class="field">
+            <span data-i18n="drawer.preset">预设</span>
+            <select id="setting-preset"></select>
+          </label>
+          <div class="field-row" id="custom-size-row" hidden>
+            <label class="field">
+              <span data-i18n="drawer.width">宽度</span>
+              <input id="setting-width" type="number" step="1" />
+            </label>
+            <label class="field">
+              <span data-i18n="drawer.height">高度</span>
+              <input id="setting-height" type="number" step="1" />
+            </label>
+            <label class="field">
+              <span data-i18n="drawer.scale">像素比</span>
+              <input id="setting-scale" type="number" min="1" max="3" step="1" />
+            </label>
+          </div>
+          <label class="switch">
+            <input id="setting-mobile" type="checkbox" />
+            <span data-i18n="drawer.mobile">移动设备与触摸模式</span>
+          </label>
+        </fieldset>
+
+        <fieldset class="field-group">
+          <legend data-i18n="drawer.identity">身份与区域</legend>
+          <div class="field-row">
+            <label class="field">
+              <span data-i18n="drawer.region">出口区域</span>
+              <select id="setting-region"></select>
+            </label>
+            <label class="field">
+              <span data-i18n="drawer.locale">语言</span>
+              <select id="setting-locale"></select>
+            </label>
+          </div>
+          <div class="field-row">
+            <label class="field">
+              <span data-i18n="drawer.timezone">时区</span>
+              <select id="setting-timezone"></select>
+            </label>
+            <label class="field">
+              <span data-i18n="drawer.colorScheme">网页配色</span>
+              <select id="setting-color-scheme">
+                <option value="system" data-i18n="drawer.colorSystem">跟随系统</option>
+                <option value="light" data-i18n="drawer.colorLight">浅色</option>
+                <option value="dark" data-i18n="drawer.colorDark">深色</option>
+              </select>
+            </label>
+          </div>
+          <label class="field">
+            <span data-i18n="drawer.userAgent">自定义 User-Agent</span>
+            <input
+              id="setting-user-agent"
+              type="text"
+              maxlength="512"
+              spellcheck="false"
+              data-i18n-attr="placeholder:drawer.userAgentHint"
+            />
+          </label>
+        </fieldset>
+
+        <fieldset class="field-group">
+          <legend data-i18n="drawer.performance">性能与隐私</legend>
+          <div class="field">
+            <span data-i18n="drawer.blockLabel">拦截资源</span>
+            <div class="chip-row" id="blocked-resources"></div>
+          </div>
+          <label class="switch">
+            <input id="setting-reduced-motion" type="checkbox" />
+            <span data-i18n="drawer.reducedMotion">请求网页减弱动画</span>
+          </label>
+          <label class="switch">
+            <input id="setting-geolocation" type="checkbox" />
+            <span data-i18n="drawer.geolocation">覆盖网页定位</span>
+          </label>
+          <div class="field-row" id="geolocation-row" hidden>
+            <label class="field">
+              <span data-i18n="drawer.latitude">纬度</span>
+              <input id="setting-latitude" type="number" step="any" min="-90" max="90" />
+            </label>
+            <label class="field">
+              <span data-i18n="drawer.longitude">经度</span>
+              <input id="setting-longitude" type="number" step="any" min="-180" max="180" />
+            </label>
+            <label class="field">
+              <span data-i18n="drawer.accuracy">精度（米）</span>
+              <input id="setting-accuracy" type="number" step="1" min="0" max="10000" />
+            </label>
+          </div>
+        </fieldset>
+
+        <p class="drawer-note" data-i18n="drawer.note">
+          设置只保存在本机，会在远程 Chrome 首次导航前应用。修改后对已运行的会话无效，只影响新建的会话。
         </p>
-      </section>
+      </form>
 
-      <section class="how-it-works" aria-labelledby="how-title">
-        <div class="how-heading">
-          <p class="section-label">工作方式</p>
-          <h2 id="how-title">浏览器在边缘运行，控制权在你手里</h2>
+      <footer class="drawer-foot">
+        <button class="ghost-button" id="settings-reset" type="button" data-i18n="drawer.reset">
+          恢复默认
+        </button>
+        <button class="primary-button" id="settings-done" type="button" data-i18n="common.done">
+          完成
+        </button>
+      </footer>
+    </aside>
+
+    <div class="modal-backdrop" id="modal-backdrop" hidden></div>
+
+    <section
+      class="modal"
+      id="extract-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="extract-title"
+      hidden
+    >
+      <header class="modal-head">
+        <div>
+          <p class="eyebrow" data-i18n="extract.eyebrow">页面正文</p>
+          <h2 id="extract-title"></h2>
+          <small id="extract-url" class="mono"></small>
         </div>
-        <ol class="steps">
-          <li>
-            <span>01</span>
-            <div>
-              <h3>创建隔离会话</h3>
-              <p>Worker 校验网址并启动专属 Browser Run 实例。</p>
-            </div>
-          </li>
-          <li>
-            <span>02</span>
-            <div>
-              <h3>实时安全操作</h3>
-              <p>通过 Cloudflare Live View 直接操控远程页面。</p>
-            </div>
-          </li>
-          <li>
-            <span>03</span>
-            <div>
-              <h3>自动彻底关闭</h3>
-              <p>Durable Object 到时关闭实例，不长期保留浏览状态。</p>
-            </div>
-          </li>
-        </ol>
-      </section>
-
-      <section class="notice">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <circle cx="12" cy="12" r="9" />
-          <path d="M12 10v6M12 7h.01" />
-        </svg>
-        <p>
-          Browser Run 会被网站识别为自动化流量，部分登录、视频或高风控网站可能拒绝访问。
-          本工具不用于绕过验证码、访问控制或网站条款。
-        </p>
-      </section>
-    </main>
-
-    <footer>
-      <span>CloudBrowser MVP</span>
-      <span>Workers · Durable Objects · Browser Run</span>
-    </footer>
-
-    <div class="auth-backdrop" id="auth-backdrop">
-      <section class="auth-card" role="dialog" aria-labelledby="auth-title" aria-modal="true">
-        <div class="auth-icon" aria-hidden="true">
-          <svg viewBox="0 0 32 32">
-            <path d="M9.5 24.5h13a6 6 0 0 0 .2-12A8 8 0 0 0 7.5 15a4.8 4.8 0 0 0 2 9.5Z" />
-            <path d="M12 18h8M16 14v8" />
-          </svg>
-        </div>
-        <p class="section-label">受保护的控制台</p>
-        <h2 id="auth-title">输入访问口令</h2>
-        <p>口令仅保存在当前标签页，不会写入网址或本地持久存储。</p>
-        <form id="auth-form">
-          <label for="access-token">访问口令</label>
-          <input
-            id="access-token"
-            type="password"
-            autocomplete="current-password"
-            placeholder="ADMIN_TOKEN"
-            required
-          />
-          <button id="auth-button" class="primary-button wide" type="submit">
-            进入控制台
+        <div class="modal-head-actions">
+          <button class="ghost-button" id="extract-copy" type="button">
+            <svg><use href="#i-copy" /></svg>
+            <span data-i18n="common.copy">复制</span>
           </button>
-          <div id="auth-message" class="form-message hidden" role="alert"></div>
+          <button
+            class="icon-button"
+            id="extract-close"
+            type="button"
+            data-i18n-attr="aria-label:common.close"
+          >
+            <svg><use href="#i-close" /></svg>
+          </button>
+        </div>
+      </header>
+      <div class="modal-body">
+        <pre id="extract-text"></pre>
+      </div>
+      <footer class="modal-foot">
+        <span id="extract-meta"></span>
+      </footer>
+    </section>
+
+    <section
+      class="modal modal-narrow"
+      id="shortcuts-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="shortcuts-title"
+      hidden
+    >
+      <header class="modal-head">
+        <h2 id="shortcuts-title" data-i18n="shortcuts.title">键盘快捷键</h2>
+        <button
+          class="icon-button"
+          id="shortcuts-close"
+          type="button"
+          data-i18n-attr="aria-label:common.close"
+        >
+          <svg><use href="#i-close" /></svg>
+        </button>
+      </header>
+      <div class="modal-body">
+        <ul class="shortcut-list" id="shortcut-list"></ul>
+      </div>
+    </section>
+
+    <div class="palette" id="palette" role="dialog" aria-modal="true" hidden>
+      <div class="palette-inner">
+        <div class="palette-input">
+          <svg><use href="#i-search" /></svg>
+          <input
+            id="palette-input"
+            type="text"
+            spellcheck="false"
+            data-i18n-attr="placeholder:palette.placeholder"
+          />
+          <kbd>ESC</kbd>
+        </div>
+        <ul class="palette-results" id="palette-results"></ul>
+      </div>
+    </div>
+
+    <div class="toasts" id="toasts" aria-live="polite"></div>
+
+    <div class="auth-screen" id="auth-screen">
+      <div class="auth-aurora" aria-hidden="true"></div>
+      <section class="auth-card">
+        <span class="brand-mark large"><svg><use href="#i-cloud" /></svg></span>
+        <h1 data-i18n="auth.title">CloudBrowser 控制台</h1>
+        <p data-i18n="auth.subtitle">
+          输入访问口令进入。口令只保存在当前标签页，不会写入网址或长期存储。
+        </p>
+        <form id="auth-form">
+          <label class="field">
+            <span data-i18n="auth.token">访问口令</span>
+            <input
+              id="auth-token"
+              type="password"
+              autocomplete="current-password"
+              placeholder="ADMIN_TOKEN"
+              required
+            />
+          </label>
+          <button class="primary-button wide" id="auth-button" type="submit">
+            <span data-i18n="auth.enter">进入控制台</span>
+          </button>
         </form>
+        <p class="auth-error" id="auth-error" role="alert" hidden></p>
+        <div class="auth-foot">
+          <span id="auth-version"></span>
+          <button class="ghost-button tiny" id="auth-lang" type="button">
+            <svg><use href="#i-globe" /></svg>
+            <span>English</span>
+          </button>
+        </div>
       </section>
     </div>
   </body>

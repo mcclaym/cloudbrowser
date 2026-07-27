@@ -40,8 +40,16 @@ describe("normalizeTargetUrl", () => {
     "http://[2001:db8::1]",
     "https://user:password@example.com",
     "https://example.com:8443",
+    "http://example.onion",
+    "http://1.0.0.127.in-addr.arpa",
+    "http://box.lan",
   ])("rejects private or unsafe target %s", (target) => {
     expect(() => normalizeTargetUrl(target)).toThrow();
+  });
+
+  it("rejects values that are not strings or are too long", () => {
+    expect(() => normalizeTargetUrl(42)).toThrow();
+    expect(() => normalizeTargetUrl(`https://example.com/${"a".repeat(2100)}`)).toThrow();
   });
 });
 
@@ -49,6 +57,10 @@ describe("isBrowserRequestAllowed", () => {
   it("allows page data URLs and public subresources", () => {
     expect(isBrowserRequestAllowed("data:image/png;base64,AA==")).toBe(true);
     expect(isBrowserRequestAllowed("https://cdn.example.com/app.js")).toBe(true);
+  });
+
+  it("allows the blank page used between navigations", () => {
+    expect(isBrowserRequestAllowed("about:blank")).toBe(true);
   });
 
   it("blocks unsafe redirects and browser protocols", () => {

@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>CloudBrowser · Mock Live View</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles/tokens.css?v=2" />
+    <link rel="stylesheet" href="/styles/base.css?v=2" />
+    <link rel="stylesheet" href="/styles/mock.css?v=2" />
+    <script type="module" src="/js/mock-live.js?v=2" defer></script>
+  </head>
+  <body class="mock-body">
+    <main class="mock-card">
+      <span class="mock-badge">MOCK</span>
+      <h1>本地 Mock 模式</h1>
+      <p>
+        这是 <code>BROWSER_MOCK=true</code> 时的占位画面。没有创建 Browser Run
+        实例，也不会消耗云端浏览时长。
+      </p>
+      <dl class="mock-facts">
+        <div><dt>目标网址</dt><dd id="mock-url">—</dd></div>
+        <div><dt>视图模式</dt><dd id="mock-mode">tab</dd></div>
+      </dl>
+      <p class="mock-note">
+        部署到 Cloudflare 并配置 Browser Run 后，这里会换成 live.browser.run
+        的真实远程画面。
+      </p>
+    </main>
+  </body>
+</html>

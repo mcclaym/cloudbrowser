@@ -1,16 +1,16 @@
 /*
   Cache-Control: no-cache
-  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; frame-src https://live.browser.run; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self'; frame-src 'self' https://live.browser.run; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'
   Cross-Origin-Opener-Policy: same-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
 
-/styles.css
+/js/*
   Cache-Control: no-cache
 
-/app.js
+/styles/*
   Cache-Control: no-cache
 
 /favicon.svg

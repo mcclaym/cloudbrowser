@@ -7,6 +7,8 @@ export class TargetUrlError extends Error {
   }
 }
 
+export const MAX_TARGET_URL_LENGTH = 2048;
+
 const BLOCKED_HOST_SUFFIXES = [
   ".localhost",
   ".local",
@@ -14,8 +16,11 @@ const BLOCKED_HOST_SUFFIXES = [
   ".lan",
   ".home",
   ".home.arpa",
+  ".arpa",
+  ".onion",
   ".test",
   ".invalid",
+  ".example",
 ];
 
 export function normalizeTargetUrl(input: unknown): string {
@@ -24,8 +29,10 @@ export function normalizeTargetUrl(input: unknown): string {
   }
 
   const trimmed = input.trim();
-  if (!trimmed || trimmed.length > 2048) {
-    throw new TargetUrlError("网址不能为空，且不能超过 2048 个字符。");
+  if (!trimmed || trimmed.length > MAX_TARGET_URL_LENGTH) {
+    throw new TargetUrlError(
+      `网址不能为空，且不能超过 ${MAX_TARGET_URL_LENGTH} 个字符。`,
+    );
   }
 
   const candidate = /^[a-zA-Z][a-zA-Z\d+.-]*:/.test(trimmed)
@@ -61,7 +68,11 @@ export function normalizeTargetUrl(input: unknown): string {
 }
 
 export function isBrowserRequestAllowed(rawUrl: string): boolean {
-  if (rawUrl.startsWith("data:") || rawUrl.startsWith("blob:")) {
+  if (
+    rawUrl.startsWith("data:") ||
+    rawUrl.startsWith("blob:") ||
+    rawUrl === "about:blank"
+  ) {
     return true;
   }
 

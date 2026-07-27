@@ -1,3 +1,5 @@
+import type { LiveViewUrls } from "./types";
+
 export interface BrowserTarget {
   id: string;
   type: string;
@@ -7,10 +9,7 @@ export interface BrowserTarget {
   webSocketDebuggerUrl?: string;
 }
 
-export interface LiveViewUrls {
-  liveUrl: string;
-  inspectorUrl: string;
-}
+export type { LiveViewUrls };
 
 interface CloudflareEnvelope<T> {
   success?: boolean;

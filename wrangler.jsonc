@@ -5,6 +5,10 @@
   "compatibility_date": "2026-07-24",
   "compatibility_flags": ["nodejs_compat"],
   "keep_vars": true,
+  "vars": {
+    "BROWSER_SESSION_TTL_SECONDS": "600",
+    "MAX_CONCURRENT_SESSIONS": "3"
+  },
   "browser": {
     "binding": "BROWSER"
   },
