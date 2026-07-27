@@ -8,6 +8,7 @@ import {
   type BrowserSettings,
 } from "./browser-settings";
 import { closeBrowserSession, getLiveViewUrls } from "./cloudflare-api";
+import { CONTAINER_SLEEP_AFTER } from "./browser-container";
 import type { Env } from "./env";
 import { ApiError, binaryResponse, json } from "./http";
 import {
@@ -47,6 +48,7 @@ import type {
   CapacityInfo,
   LiveViewUrls,
   PublicSession,
+  SessionKind,
   SessionListResponse,
   SessionRecord,
   SessionStats,
@@ -94,7 +96,10 @@ export class BrowserSession extends DurableObject<Env> {
     }
 
     const alive = (await this.loadAll()).filter(
-      (record) => !record.mock && needsHeartbeat(record.ttlSeconds),
+      (record) =>
+        !record.mock &&
+        record.kind === "browser-run" &&
+        needsHeartbeat(record.ttlSeconds),
     );
     for (const record of alive) {
       await this.touch(record);
@@ -187,6 +192,7 @@ export class BrowserSession extends DurableObject<Env> {
   ): Promise<SessionEnvelope & LiveViewUrls> {
     const targetUrl = normalizeTargetUrl(payload.url);
     const settings = normalizeBrowserSettings(payload.settings);
+    const kind = readSessionKind(payload.kind);
 
     const existing = await this.loadAll({ pruneExpired: true });
     const maxSessions = configuredMaxSessions(this.env.MAX_CONCURRENT_SESSIONS);
@@ -204,6 +210,7 @@ export class BrowserSession extends DurableObject<Env> {
     );
     const base: Omit<SessionRecord, "browserSessionId" | "mock"> = {
       id: createSessionId(),
+      kind,
       targetUrl,
       createdAt: now,
       expiresAt: now + ttlSeconds * 1000,
@@ -228,6 +235,10 @@ export class BrowserSession extends DurableObject<Env> {
         session: toPublicSession(record, now),
         ...mockLiveViewUrls(targetUrl),
       };
+    }
+
+    if (kind === "container") {
+      return this.createContainerSession(base, settings, targetUrl);
     }
 
     this.assertBrowserApiConfigured();
@@ -280,6 +291,41 @@ export class BrowserSession extends DurableObject<Env> {
     }
   }
 
+  /**
+   * Boots a full desktop in a container. There is no Live View URL: the screen
+   * is proxied through this Worker at /screen/<id>/ behind a signed ticket, so
+   * the console frames a same-origin page instead of a third-party one.
+   */
+  private async createContainerSession(
+    base: Omit<SessionRecord, "browserSessionId" | "mock">,
+    settings: BrowserSettings,
+    targetUrl: string,
+  ): Promise<SessionEnvelope & LiveViewUrls> {
+    const container = this.env.BROWSER_CONTAINERS.getByName(base.id);
+    await container.boot({
+      targetUrl,
+      width: settings.viewport.width,
+      height: settings.viewport.height,
+      locale: settings.locale,
+      timezone: settings.timezone,
+    });
+
+    const record: SessionRecord = {
+      ...base,
+      browserSessionId: `container-${base.id}`,
+      mock: false,
+      title: hostnameOf(targetUrl),
+    };
+
+    await this.persist(record);
+    await this.bumpStats({ totalLaunched: 1 });
+
+    return {
+      session: toPublicSession(record, Date.now()),
+      ...screenUrls(record.id),
+    };
+  }
+
   private async describe(id: string): Promise<PublicSession> {
     const record = await this.requireSession(id);
     return toPublicSession(record, Date.now());
@@ -291,6 +337,13 @@ export class BrowserSession extends DurableObject<Env> {
       return {
         session: toPublicSession(record, Date.now()),
         ...mockLiveViewUrls(record.targetUrl),
+      };
+    }
+
+    if (record.kind === "container") {
+      return {
+        session: toPublicSession(record, Date.now()),
+        ...screenUrls(record.id),
       };
     }
 
@@ -309,6 +362,7 @@ export class BrowserSession extends DurableObject<Env> {
     payload: Record<string, unknown>,
   ): Promise<SessionEnvelope> {
     const record = await this.requireSession(id);
+    this.assertNotContainer(record, "远程导航");
     const direction = readDirection(payload.direction);
 
     if (record.mock) {
@@ -403,6 +457,7 @@ export class BrowserSession extends DurableObject<Env> {
 
   private async extractSession(id: string): Promise<Record<string, unknown>> {
     const record = await this.requireSession(id);
+    this.assertNotContainer(record, "正文提取");
     if (record.mock) {
       return {
         url: record.targetUrl,
@@ -503,6 +558,21 @@ export class BrowserSession extends DurableObject<Env> {
         `本地 Mock 模式不支持${action}。`,
       );
     }
+    this.assertNotContainer(record, action);
+  }
+
+  /**
+   * Container sessions are a plain desktop Chromium with no automation
+   * attached, so the CDP-backed page tools do not apply to them.
+   */
+  private assertNotContainer(record: SessionRecord, action: string): void {
+    if (record.kind === "container") {
+      throw new ApiError(
+        501,
+        "CONTAINER_UNSUPPORTED",
+        `完整浏览器环境不支持${action}，请直接在画面中操作。`,
+      );
+    }
   }
 
   private async markActivity(
@@ -537,8 +607,11 @@ export class BrowserSession extends DurableObject<Env> {
     reason: "expired" | "stopped",
   ): Promise<void> {
     try {
-      if (
-        !record.mock &&
+      if (record.mock) {
+        // Nothing to release.
+      } else if (record.kind === "container") {
+        await this.env.BROWSER_CONTAINERS.getByName(record.id).shutdown();
+      } else if (
         this.env.CLOUDFLARE_ACCOUNT_ID &&
         this.env.CLOUDFLARE_BROWSER_TOKEN
       ) {
@@ -612,6 +685,7 @@ export class BrowserSession extends DurableObject<Env> {
 
     const record: SessionRecord = {
       id: createSessionId(),
+      kind: "browser-run",
       browserSessionId,
       targetUrl,
       createdAt: Number.isFinite(createdAt) ? createdAt : Date.now(),
@@ -737,6 +811,28 @@ function asString(value: unknown, field: string): string {
     throw ApiError.badRequest("MISSING_FIELD", "请输入有效的网址。", field);
   }
   return value;
+}
+
+function readSessionKind(value: unknown): SessionKind {
+  if (value === undefined || value === null || value === "" || value === "browser-run") {
+    return "browser-run";
+  }
+  if (value === "container") {
+    return "container";
+  }
+  throw ApiError.badRequest(
+    "INVALID_SESSION_KIND",
+    "会话类型只能是 browser-run 或 container。",
+    "kind",
+  );
+}
+
+/** Same-origin screen paths for a container session. */
+function screenUrls(sessionId: string): LiveViewUrls {
+  return {
+    liveUrl: `/screen/${sessionId}/`,
+    inspectorUrl: `/screen/${sessionId}/`,
+  };
 }
 
 function readDirection(value: unknown): HistoryDirection | null {

@@ -653,6 +653,84 @@
   background: none;
 }
 
+.kind-row {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.kind-label {
+  align-self: center;
+  font-size: var(--step--2);
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
+.kind-option {
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  cursor: pointer;
+  transition: all var(--dur-fast) var(--ease);
+}
+
+.kind-option:hover {
+  border-color: var(--border-strong);
+}
+
+.kind-option input {
+  appearance: none;
+  width: 15px;
+  height: 15px;
+  margin-top: 2px;
+  border-radius: 50%;
+  border: 1px solid var(--border-strong);
+  flex: none;
+  position: relative;
+}
+
+.kind-option input:checked {
+  border-color: var(--accent);
+}
+
+.kind-option input:checked::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.kind-option:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.kind-option > span {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.kind-option strong {
+  font-size: var(--step--1);
+  font-weight: 600;
+}
+
+.kind-option small {
+  font-size: var(--step--2);
+  color: var(--text-faint);
+  line-height: 1.5;
+}
+
 .preset-row {
   display: flex;
   flex-wrap: wrap;

@@ -220,6 +220,7 @@
             <button
               class="icon-button"
               id="nav-back"
+              data-tool="back"
               type="button"
               data-i18n-attr="title:chrome.back,aria-label:chrome.back"
             >
@@ -228,6 +229,7 @@
             <button
               class="icon-button"
               id="nav-forward"
+              data-tool="forward"
               type="button"
               data-i18n-attr="title:chrome.forward,aria-label:chrome.forward"
             >
@@ -236,6 +238,7 @@
             <button
               class="icon-button"
               id="nav-reload"
+              data-tool="reload"
               type="button"
               data-i18n-attr="title:chrome.reload,aria-label:chrome.reload"
             >
@@ -264,6 +267,7 @@
             <button
               class="icon-button"
               id="action-screenshot"
+              data-tool="screenshot"
               type="button"
               data-i18n-attr="title:chrome.screenshot,aria-label:chrome.screenshot"
             >
@@ -272,6 +276,7 @@
             <button
               class="icon-button"
               id="action-pdf"
+              data-tool="pdf"
               type="button"
               data-i18n-attr="title:chrome.pdf,aria-label:chrome.pdf"
             >
@@ -280,6 +285,7 @@
             <button
               class="icon-button"
               id="action-extract"
+              data-tool="extract"
               type="button"
               data-i18n-attr="title:chrome.extract,aria-label:chrome.extract"
             >
@@ -363,6 +369,30 @@
                   <button class="primary-button" id="launch-button" type="submit">
                     <span data-i18n="launcher.launch">启动浏览器</span>
                   </button>
+                </div>
+
+                <div class="kind-row" role="radiogroup" aria-labelledby="kind-label">
+                  <span class="kind-label" id="kind-label" data-i18n="kind.label">
+                    会话类型
+                  </span>
+                  <label class="kind-option">
+                    <input type="radio" name="session-kind" value="browser-run" checked />
+                    <span>
+                      <strong data-i18n="kind.browserRun">托管浏览器</strong>
+                      <small data-i18n="kind.browserRunHint">
+                        秒级启动，可截图 / 导出 PDF / 提取正文
+                      </small>
+                    </span>
+                  </label>
+                  <label class="kind-option">
+                    <input type="radio" name="session-kind" value="container" />
+                    <span>
+                      <strong data-i18n="kind.container">完整浏览器环境</strong>
+                      <small data-i18n="kind.containerHint">
+                        容器里的真实桌面 Chromium，自己动手操作
+                      </small>
+                    </span>
+                  </label>
                 </div>
 
                 <div class="preset-row" id="device-presets" role="group"></div>

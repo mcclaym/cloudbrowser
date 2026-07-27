@@ -18,6 +18,7 @@ const NOW = 1_700_000_000_000;
 function record(overrides: Partial<SessionRecord> = {}): SessionRecord {
   return {
     id: "abc123",
+    kind: "browser-run",
     browserSessionId: "cf-session-id-1234567890",
     targetUrl: "https://example.com/docs",
     createdAt: NOW,

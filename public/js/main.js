@@ -219,7 +219,7 @@ async function refreshSessions({ capacity = false } = {}) {
 }
 
 function isTrustedLiveUrl(rawUrl) {
-  if (rawUrl.startsWith("/mock-live.html")) {
+  if (rawUrl.startsWith("/mock-live.html") || rawUrl.startsWith("/screen/")) {
     return true;
   }
   try {
@@ -234,6 +234,18 @@ async function ensureLive(sessionId, { force = false } = {}) {
   const existing = liveFor(sessionId);
   if (existing && !force && Date.now() - existing.refreshedAt < LIVE_REFRESH_MS) {
     return existing;
+  }
+
+  const session = state.sessions.find((entry) => entry.id === sessionId);
+  // Mock container sessions have no real desktop behind them, so they keep the
+  // local placeholder instead of a ticketed screen path.
+  if (session?.kind === "container" && !session.mock) {
+    const ticket = await api.screenTicket(sessionId);
+    rememberLive(sessionId, {
+      liveUrl: ticket.url,
+      inspectorUrl: ticket.url,
+    });
+    return liveFor(sessionId);
   }
 
   const result = await api.liveUrl(sessionId);
@@ -288,16 +300,22 @@ async function launchSession(rawUrl) {
     return;
   }
 
+  const kind = selectedSessionKind();
   setState({ launching: true });
   setLoadingStep("validate");
   renderApp();
+  $("#loading-title").textContent =
+    kind === "container" ? t("kind.containerStarting") : t("stage.loadingTitle");
   const launchLabel = $("#launch-button").querySelector("span");
   launchLabel.textContent = t("launcher.launching");
   const stepTimer = setTimeout(() => setLoadingStep("launch"), 700);
-  const navigateTimer = setTimeout(() => setLoadingStep("navigate"), 3200);
+  const navigateTimer = setTimeout(
+    () => setLoadingStep("navigate"),
+    kind === "container" ? 20_000 : 3200,
+  );
 
   try {
-    const result = await api.createSession(url, toApiSettings());
+    const result = await api.createSession(url, toApiSettings(), kind);
     rememberLive(result.session.id, {
       liveUrl: result.liveUrl,
       inspectorUrl: result.inspectorUrl,
@@ -312,6 +330,9 @@ async function launchSession(rawUrl) {
       rememberVisit(getLocalHistory(), result.session.targetUrl, result.session.title),
     );
     $("#launch-url").value = "";
+    if (result.session.kind === "container") {
+      await ensureLive(result.session.id, { force: true });
+    }
     toast(t("session.created"), { type: "success" });
     renderApp();
   } catch (error) {
@@ -771,6 +792,13 @@ function updateAuthLanguageButton() {
   label.textContent = nextLanguage() === "en" ? "English" : "简体中文";
 }
 
+function selectedSessionKind() {
+  const checked = document.querySelector(
+    'input[name="session-kind"]:checked',
+  );
+  return checked?.value === "container" ? "container" : "browser-run";
+}
+
 function isCompactViewport() {
   return window.matchMedia("(max-width: 900px)").matches;
 }
@@ -877,6 +905,14 @@ function wireEvents() {
     setLocalHistory(clearHistory());
     toast(t("rail.historyCleared"), { duration: 2200 });
   });
+
+  for (const radio of document.querySelectorAll('input[name="session-kind"]')) {
+    radio.checked = radio.value === prefs.settings.kind;
+    radio.addEventListener("change", () => {
+      prefs.settings = { ...prefs.settings, kind: selectedSessionKind() };
+      savePrefs();
+    });
+  }
 
   $("#launch-form").addEventListener("submit", (event) => {
     event.preventDefault();

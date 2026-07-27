@@ -60,6 +60,14 @@ export const dictionaries = {
     "launcher.assurance2": "到期自动销毁",
     "launcher.assurance3": "可选出口区域与设备模拟",
     "launcher.hint": "每个会话最长 {duration}，同时最多 {max} 个。",
+    "kind.label": "会话类型",
+    "kind.browserRun": "托管浏览器",
+    "kind.browserRunHint": "秒级启动，可截图 / 导出 PDF / 提取正文",
+    "kind.container": "完整浏览器环境",
+    "kind.containerHint": "容器里的真实桌面 Chromium，自己动手操作",
+    "kind.containerBadge": "完整环境",
+    "kind.containerStarting": "正在准备完整浏览器环境，首次启动约需一分钟…",
+    "kind.containerTools": "完整环境不支持远程页面工具，请直接在画面中操作。",
     "launcher.quickLinks": "快速打开",
 
     "stage.loadingTitle": "正在启动云端浏览器…",
@@ -197,6 +205,9 @@ export const dictionaries = {
     "error.INVALID_TARGET_URL": "网址无效或不被允许。",
     "error.MOCK_UNSUPPORTED": "本地 Mock 模式不支持这个操作。",
     "error.CAPACITY_UNAVAILABLE": "暂时无法读取 Browser Run 配额。",
+    "error.CONTAINER_START_FAILED": "完整浏览器环境启动失败，请稍后重试。",
+    "error.CONTAINER_UNSUPPORTED": "完整浏览器环境不支持这个操作。",
+    "error.INVALID_SCREEN_TICKET": "画面访问票据已过期，正在重新连接。",
   },
 
   en: {
@@ -257,6 +268,14 @@ export const dictionaries = {
     "launcher.assurance2": "Destroyed on expiry",
     "launcher.assurance3": "Pick an exit region and device",
     "launcher.hint": "Each session runs up to {duration}, {max} at a time.",
+    "kind.label": "Session type",
+    "kind.browserRun": "Managed browser",
+    "kind.browserRunHint": "Starts in seconds; screenshot, PDF and text tools",
+    "kind.container": "Full desktop browser",
+    "kind.containerHint": "Real Chromium on a container desktop, driven by you",
+    "kind.containerBadge": "Desktop",
+    "kind.containerStarting": "Preparing the desktop — the first boot takes about a minute…",
+    "kind.containerTools": "Desktop sessions have no remote page tools; drive the screen directly.",
     "launcher.quickLinks": "Quick open",
 
     "stage.loadingTitle": "Starting the cloud browser…",
@@ -395,6 +414,9 @@ export const dictionaries = {
     "error.INVALID_TARGET_URL": "That URL is invalid or not allowed.",
     "error.MOCK_UNSUPPORTED": "Local mock mode does not support this action.",
     "error.CAPACITY_UNAVAILABLE": "Browser Run quota is unavailable right now.",
+    "error.CONTAINER_START_FAILED": "The desktop session failed to start — try again.",
+    "error.CONTAINER_UNSUPPORTED": "Desktop sessions do not support this action.",
+    "error.INVALID_SCREEN_TICKET": "The screen ticket expired; reconnecting.",
   },
 };
 

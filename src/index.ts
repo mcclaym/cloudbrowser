@@ -30,7 +30,14 @@ import {
   MAX_SESSION_TTL_SECONDS,
 } from "./session-config";
 
+import {
+  createScreenTicket,
+  DEFAULT_TICKET_TTL_SECONDS,
+  verifyScreenTicket,
+} from "./screen-ticket";
+
 export { BrowserSession } from "./browser-session";
+export { BrowserContainer } from "./browser-container";
 
 /** Durable Object name that owns every session of the single console user. */
 const OWNER = "owner";
@@ -38,6 +45,20 @@ const OWNER = "owner";
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
+
+    if (url.pathname.startsWith("/screen/")) {
+      try {
+        return await handleScreen(request, env, url);
+      } catch (error) {
+        if (error instanceof ApiError) {
+          return errorResponseFrom(error);
+        }
+        console.error("Screen proxy error", error);
+        return errorResponseFrom(
+          new ApiError(502, "SCREEN_UNAVAILABLE", "远程画面暂时不可用。"),
+        );
+      }
+    }
 
     if (!url.pathname.startsWith("/api/")) {
       return env.ASSETS.fetch(request);
@@ -93,11 +114,103 @@ async function handleApi(
     return json({ ok: true, ...consoleConfig(env) });
   }
 
+  const ticketMatch = /^\/api\/sessions\/([\w-]+)\/screen-ticket$/.exec(
+    url.pathname,
+  );
+  if (ticketMatch) {
+    if (request.method !== "POST") {
+      return methodNotAllowed("POST");
+    }
+    const sessionId = ticketMatch[1];
+    const ticket = await createScreenTicket(
+      env.ADMIN_TOKEN as string,
+      sessionId,
+      DEFAULT_TICKET_TTL_SECONDS,
+    );
+    return json({
+      url: `/screen/${sessionId}/?t=${encodeURIComponent(ticket)}`,
+      expiresInSeconds: DEFAULT_TICKET_TTL_SECONDS,
+    });
+  }
+
   if (url.pathname === "/api/sessions" || url.pathname.startsWith("/api/sessions/")) {
     return forwardToSessionHub(request, env, url);
   }
 
   throw ApiError.notFound();
+}
+
+/**
+ * Streams a container session's desktop to the console. The `<iframe>` cannot
+ * send an Authorization header, so access is proven by a signed, short-lived,
+ * session-scoped ticket instead. noVNC only carries the ticket on its first
+ * request, so once validated the ticket is remembered in a host-only cookie
+ * for the subresources and the WebSocket upgrade.
+ */
+async function handleScreen(
+  request: Request,
+  env: Env,
+  url: URL,
+): Promise<Response> {
+  if (!env.ADMIN_TOKEN) {
+    throw new ApiError(503, "AUTH_NOT_CONFIGURED", "服务端尚未设置 ADMIN_TOKEN。");
+  }
+
+  const match = /^\/screen\/([\w-]+)(\/.*)?$/.exec(url.pathname);
+  if (!match) {
+    throw ApiError.notFound();
+  }
+  const sessionId = match[1];
+  const rest = match[2] ?? "/";
+
+  const supplied =
+    url.searchParams.get("t") ?? screenCookie(request, sessionId) ?? "";
+  const ticket = supplied
+    ? await verifyScreenTicket(env.ADMIN_TOKEN, supplied, sessionId)
+    : null;
+  if (!ticket) {
+    throw new ApiError(401, "INVALID_SCREEN_TICKET", "画面访问票据无效或已过期。");
+  }
+
+  const target = new URL(`https://container.internal${rest}${url.search}`);
+  target.searchParams.delete("t");
+
+  const container = env.BROWSER_CONTAINERS.getByName(sessionId);
+  const response = await container.fetch(
+    new Request(target, {
+      method: request.method,
+      headers: request.headers,
+      body: request.body,
+    }),
+  );
+
+  // WebSocket upgrades must be returned untouched.
+  if (response.webSocket) {
+    return response;
+  }
+
+  const headers = new Headers(response.headers);
+  headers.set("cache-control", "no-store");
+  headers.set("referrer-policy", "no-referrer");
+  if (url.searchParams.has("t")) {
+    headers.append(
+      "set-cookie",
+      `cb_screen_${sessionId}=${supplied}; Path=/screen/${sessionId}/; HttpOnly; Secure; SameSite=Strict; Max-Age=${DEFAULT_TICKET_TTL_SECONDS}`,
+    );
+  }
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
+function screenCookie(request: Request, sessionId: string): string | null {
+  const cookies = request.headers.get("cookie") ?? "";
+  const match = new RegExp(`(?:^|;\\s*)cb_screen_${sessionId}=([^;]+)`).exec(
+    cookies,
+  );
+  return match ? match[1] : null;
 }
 
 async function forwardToSessionHub(

@@ -17,6 +17,10 @@
       {
         "name": "BROWSER_SESSIONS",
         "class_name": "BrowserSession"
+      },
+      {
+        "name": "BROWSER_CONTAINERS",
+        "class_name": "BrowserContainer"
       }
     ]
   },
@@ -24,12 +28,33 @@
     {
       "tag": "v1",
       "new_sqlite_classes": ["BrowserSession"]
+    },
+    {
+      "tag": "v2",
+      "new_sqlite_classes": ["BrowserContainer"]
     }
   ],
+  // Full desktop sessions. Chromium needs real memory: standard-1 is the
+  // smallest instance that runs it comfortably. Remove this block (and the
+  // BrowserContainer binding above) to deploy without container support.
+  "containers": [
+    {
+      "class_name": "BrowserContainer",
+      "image": "./Dockerfile",
+      "instance_type": "standard-1",
+      "max_instances": 3
+    }
+  ],
+  // Local `wrangler dev` would otherwise require a running Docker daemon just
+  // to boot. Pass --enable-containers when you actually want to exercise a
+  // container session locally.
+  "dev": {
+    "enable_containers": false
+  },
   "assets": {
     "directory": "./public",
     "binding": "ASSETS",
-    "run_worker_first": ["/api/*"]
+    "run_worker_first": ["/api/*", "/screen/*"]
   },
   "observability": {
     "enabled": true

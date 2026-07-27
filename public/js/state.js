@@ -6,6 +6,7 @@ const HISTORY_KEY = "cloudbrowser.history.v2";
 const MAX_HISTORY = 24;
 
 export const DEFAULT_SETTINGS = {
+  kind: "browser-run",
   preset: "desktop-fhd",
   width: 1920,
   height: 1080,

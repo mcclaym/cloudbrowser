@@ -87,6 +87,9 @@ function renderSessionList() {
               textContent: formatClock(remaining),
             }),
             session.mock ? el("span", { class: "tag", textContent: t("status.mock") }) : null,
+            session.kind === "container"
+              ? el("span", { class: "tag", textContent: t("kind.containerBadge") })
+              : null,
             el(
               "button",
               {
@@ -163,7 +166,13 @@ function renderChrome() {
   const session = activeSession();
   const live = session ? liveFor(session.id) : null;
   const omnibox = $("#omnibox");
+  // A container desktop has no CDP attached, so the remote page tools and the
+  // omnibox only apply to Browser Run sessions.
+  const remoteTools = Boolean(session) && session.kind !== "container";
 
+  for (const selector of ["#action-extend", "#action-fullscreen", "#action-stop"]) {
+    setDisabled($(selector), !session);
+  }
   for (const selector of [
     "#nav-back",
     "#nav-forward",
@@ -171,14 +180,17 @@ function renderChrome() {
     "#action-screenshot",
     "#action-pdf",
     "#action-extract",
-    "#action-extend",
-    "#action-fullscreen",
-    "#action-stop",
   ]) {
-    setDisabled($(selector), !session);
+    const node = $(selector);
+    setDisabled(node, !remoteTools);
+    if (node) {
+      node.title = remoteTools
+        ? t(`chrome.${node.dataset.tool ?? "reload"}`)
+        : t("kind.containerTools");
+    }
   }
-  setDisabled($("#omnibox-go"), !session);
-  omnibox.disabled = !session;
+  setDisabled($("#omnibox-go"), !remoteTools);
+  omnibox.disabled = !remoteTools;
 
   if (!session) {
     omnibox.value = "";
@@ -194,7 +206,9 @@ function renderChrome() {
   const badge = $("#omnibox-badge");
   const badgeText = session.mock
     ? t("status.mock")
-    : session.region || `${session.device.width}×${session.device.height}`;
+    : session.kind === "container"
+      ? t("kind.containerBadge")
+      : session.region || `${session.device.width}×${session.device.height}`;
   badge.textContent = badgeText;
   show(badge, Boolean(badgeText));
 

@@ -84,8 +84,10 @@ export const api = {
   verify: () => request("/api/verify", { method: "POST" }),
   listSessions: (withCapacity = false) =>
     request(`/api/sessions${withCapacity ? "?capacity=1" : ""}`),
-  createSession: (url, settings) =>
-    request("/api/sessions", { method: "POST", body: { url, settings } }),
+  createSession: (url, settings, kind) =>
+    request("/api/sessions", { method: "POST", body: { url, settings, kind } }),
+  screenTicket: (id) =>
+    request(`/api/sessions/${id}/screen-ticket`, { method: "POST" }),
   stopSession: (id) => request(`/api/sessions/${id}`, { method: "DELETE" }),
   stopAll: () => request("/api/sessions", { method: "DELETE" }),
   liveUrl: (id) => request(`/api/sessions/${id}/live-url`, { method: "POST" }),

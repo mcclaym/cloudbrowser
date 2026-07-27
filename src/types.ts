@@ -1,5 +1,8 @@
 import type { BrowserSettings } from "./browser-settings";
 
+/** Managed Browser Run session, or a full desktop in a container. */
+export type SessionKind = "browser-run" | "container";
+
 export interface HistoryEntry {
   url: string;
   title?: string;
@@ -9,6 +12,7 @@ export interface HistoryEntry {
 /** Everything the Durable Object stores about one remote browser. */
 export interface SessionRecord {
   id: string;
+  kind: SessionKind;
   browserSessionId: string;
   targetUrl: string;
   title?: string;
@@ -26,6 +30,7 @@ export interface SessionRecord {
 /** Session shape returned to the console — never contains the CDP session id. */
 export interface PublicSession {
   id: string;
+  kind: SessionKind;
   ref: string;
   targetUrl: string;
   hostname: string;

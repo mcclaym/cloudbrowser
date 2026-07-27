@@ -32,6 +32,7 @@ export function toPublicSession(
 ): PublicSession {
   return {
     id: record.id,
+    kind: record.kind,
     ref: record.browserSessionId.slice(0, 8),
     targetUrl: record.targetUrl,
     hostname: hostnameOf(record.targetUrl),

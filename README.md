@@ -9,10 +9,26 @@
 的实时画面嵌入控制台。Durable Object 保存会话元数据、按时销毁浏览器，并在长会话中
 定期重连以维持 `keep_alive`。
 
+## 两种会话类型
+
+| | 托管浏览器（Browser Run） | 完整浏览器环境（Containers） |
+| --- | --- | --- |
+| 底层 | Cloudflare Browser Run 托管的无头 Chrome | 容器里的桌面 Chromium（Xvfb + noVNC） |
+| 启动 | 数秒 | 首次约一分钟（要拉起容器） |
+| 操作 | Live View 实时画面 + 服务端页面工具 | 自己在画面里操作，跟本地浏览器一样 |
+| 截图 / PDF / 提取正文 / 地址栏导航 | 支持 | 不支持（没有挂 CDP 自动化） |
+| 画面来源 | `live.browser.run` | 同源 `/screen/<id>/`，经票据鉴权代理 |
+| 成本 | Browser Run 时长 | 容器 vCPU / 内存 / 磁盘计费 |
+
+完整环境是一个普通的桌面 Chromium，不带任何自动化补丁；它解决的是"需要真实浏览器行为
+和人工操作"的场景，不是用来伪装身份。出口 IP 仍然是 Cloudflare 数据中心地址，风控严格
+的站点照样会挑战。
+
 ## 功能
 
 **会话**
 
+- 两种会话类型：托管 Browser Run 与容器内完整桌面浏览器
 - 同时运行多个云端浏览器（默认 3 个，可配置 1–10），侧栏切换、独立倒计时
 - 会话内导航：地址栏直接打开新网址，支持后退 / 前进 / 刷新
 - 一键延长会话，最长累计 24 小时；到期由 Durable Object alarm 强制销毁
@@ -60,7 +76,12 @@ Durable Object “owner” (src/browser-session.ts)
         ├── session:<id> ── 多会话存储与统计
         ├── Alarm ──────── 到期销毁 + 长会话心跳
         ├── Browser Run binding ── puppeteer.launch / connect
-        └── Browser Run REST API ── Live View URL / 关闭会话
+        ├── Browser Run REST API ── Live View URL / 关闭会话
+        └── BrowserContainer DO ── 容器桌面（每会话一个实例）
+                    │
+                    └── Xvfb + fluxbox + Chromium + noVNC:8080
+                              ▲
+                              └── /screen/<id>/* （Worker 票据鉴权代理）
 ```
 
 单用户模型：所有受保护 API 都映射到名为 `owner` 的 Durable Object。加入多用户认证时，
@@ -78,6 +99,9 @@ Durable Object “owner” (src/browser-session.ts)
 | `src/auth.ts` | Bearer 校验与登录限流 |
 | `src/http.ts` | JSON / 错误 / 二进制响应与请求体限长 |
 | `src/session-store.ts` | 会话记录的纯函数（公开视图、历史、alarm 计算） |
+| `src/browser-container.ts` | 容器 Durable Object：启动桌面、代理画面、销毁 |
+| `src/screen-ticket.ts` | 画面代理的 HMAC 短期票据签发与校验 |
+| `Dockerfile` / `container/start.sh` | 完整浏览器环境镜像与启动脚本 |
 | `public/js/*.js` | 控制台前端 ES 模块（api / state / render / settings / i18n / ui） |
 | `public/styles/*.css` | 设计令牌、基础组件、应用布局 |
 
@@ -91,7 +115,7 @@ Durable Object “owner” (src/browser-session.ts)
 | `GET /api/health` | 服务状态与各项配置是否就绪（不返回密钥内容） |
 | `POST /api/verify` | 校验口令 |
 | `GET /api/sessions[?capacity=1]` | 会话列表、统计、可选 Browser Run 配额 |
-| `POST /api/sessions` | 创建会话 `{ url, settings }` |
+| `POST /api/sessions` | 创建会话 `{ url, settings, kind }`，`kind` 为 `browser-run`（默认）或 `container` |
 | `DELETE /api/sessions` | 结束全部会话 |
 | `GET /api/sessions/:id` | 单个会话 |
 | `DELETE /api/sessions/:id` | 结束并销毁会话 |
@@ -101,6 +125,8 @@ Durable Object “owner” (src/browser-session.ts)
 | `POST /api/sessions/:id/screenshot` | `{ fullPage, format }` 返回 PNG/JPEG |
 | `POST /api/sessions/:id/pdf` | 返回 A4 PDF |
 | `POST /api/sessions/:id/extract` | 返回标题、正文与链接 |
+| `POST /api/sessions/:id/screen-ticket` | 签发容器画面的短期票据 URL |
+| `GET /screen/:id/*` | 容器画面代理，用票据（查询参数或 Cookie）鉴权 |
 
 错误统一为 `{ "error": { "code", "message", "field?", "retryAfter?" } }`，
 控制台按 `code` 显示本地化文案。
@@ -166,6 +192,11 @@ npm run deploy
 | `MAX_CONCURRENT_SESSIONS` | Variable | `3` | 同时运行的云端浏览器数量，`1`–`10` |
 | `BROWSER_MOCK` | Variable | — | 设为 `true` 启用本地 Mock，**不要用于生产** |
 
+容器相关配置在 `wrangler.jsonc` 的 `containers` 块里：`instance_type` 默认 `standard-1`
+（1/2 vCPU、4 GiB 内存、8 GB 磁盘），Chromium 跑得动但不宽裕，卡顿就升到 `standard-2`；
+`max_instances` 控制同时存在的桌面数量。不需要完整环境时，删掉 `containers` 块和
+`BROWSER_CONTAINERS` binding 即可正常部署。
+
 Cloudflare 单次无活动 `keep_alive` 上限为 600 秒。会话时长超过它时，Durable Object 会
 每 4 分钟重连一次远程浏览器来续期，因此控制台关闭后长会话仍能存活到设定时间。
 
@@ -178,7 +209,17 @@ npx wrangler dev --var ADMIN_TOKEN:preview-token --var BROWSER_MOCK:true
 
 用 `preview-token` 登录。Mock 模式不创建 Browser Run 实例，也不消耗浏览时长：会话、
 导航、延长、到期都可用；截图与 PDF 会返回 `MOCK_UNSUPPORTED`，实时画面用本地占位面板
-代替。
+代替。容器会话在 Mock 下同样只走占位面板。
+
+`wrangler.jsonc` 里设了 `dev.enable_containers: false`，所以本地开发不需要 Docker。要真的
+在本地跑容器桌面，启动 Docker 后加 `--enable-containers`：
+
+```bash
+npx wrangler dev --enable-containers --var ADMIN_TOKEN:preview-token
+```
+
+`npm run check` 的 dry-run 带 `--containers-rollout=none`，同样不需要 Docker；正式
+`npm run deploy` 会构建镜像，需要本地或 CI 有可用的 Docker。
 
 ## 键盘快捷键
 
@@ -219,6 +260,10 @@ npx wrangler dev --var ADMIN_TOKEN:preview-token --var BROWSER_MOCK:true
   CDP 连接期间生效，Live View 中的用户操作不受它约束。
 - 开放多租户前还需要 DNS 重绑定防护、按用户额度、审计、滥用处理与支付风控。
 - 登录限流保存在 Worker isolate 内，属于尽力而为，不是全局速率限制。
+- 完整浏览器环境里的 Chromium 由使用者自由操作，Worker 的 URL 白名单只约束首个网址；
+  容器出网不受静态地址检查限制，多租户场景需要自行加出口策略。
+- 容器画面靠 `/screen/<id>/` 的 HMAC 票据鉴权（默认 15 分钟，Cookie 仅限该路径），
+  容器端口本身不对公网开放；x11vnc 不设密码，因为只有 Durable Object 能连到它。
 - Live View URL 是临时凭证，不应记录到日志或分享给其他人。
 
 ## 常用命令
