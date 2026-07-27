@@ -349,6 +349,56 @@ select {
   gap: var(--space-2);
 }
 
+.ua-preview {
+  font-size: var(--step--2);
+  color: var(--text-faint);
+  line-height: 1.6;
+  word-break: break-all;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+
+.fingerprint-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  background: rgba(251, 191, 36, 0.1);
+}
+
+.fingerprint-banner > svg {
+  color: var(--warn);
+  margin-top: 2px;
+}
+
+.fingerprint-banner > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.fingerprint-banner strong {
+  font-size: var(--step--1);
+  color: var(--text);
+}
+
+.fingerprint-banner span {
+  font-size: var(--step--2);
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+.fingerprint-banner button {
+  flex: none;
+  white-space: nowrap;
+}
+
 .chip {
   display: inline-flex;
   align-items: center;

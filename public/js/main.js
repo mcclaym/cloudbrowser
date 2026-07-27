@@ -29,7 +29,10 @@ import {
   setLocalHistory,
 } from "./render.js";
 import {
+  alignFingerprint,
   buildSettingsForm,
+  onDeviceChanged,
+  onRegionChanged,
   readSettingsForm,
   settingsSummary,
   toApiSettings,
@@ -921,6 +924,21 @@ function wireEvents() {
 
   $("#settings-form").addEventListener("input", onSettingsInput);
   $("#settings-form").addEventListener("change", onSettingsInput);
+  $("#setting-region").addEventListener("change", (event) => {
+    onRegionChanged(event.target.value);
+    onSettingsInput();
+  });
+  $("#setting-preset").addEventListener("change", (event) => {
+    onDeviceChanged(event.target.value);
+    onSettingsInput();
+  });
+  $("#fingerprint-fix").addEventListener("click", () => {
+    alignFingerprint();
+    savePrefs();
+    $("#settings-summary").textContent = settingsSummary();
+    renderApp();
+    toast(t("fingerprint.aligned"), { type: "success", duration: 2600 });
+  });
   $("#settings-reset").addEventListener("click", () => {
     prefs.settings = { ...DEFAULT_SETTINGS };
     savePrefs();

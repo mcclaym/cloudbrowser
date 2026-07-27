@@ -514,7 +514,11 @@
             </label>
           </div>
           <label class="field">
-            <span data-i18n="drawer.userAgent">自定义 User-Agent</span>
+            <span data-i18n="drawer.userAgent">User-Agent</span>
+            <select id="setting-ua-preset"></select>
+          </label>
+          <div class="field" id="custom-ua-row" hidden>
+            <span data-i18n="drawer.userAgentCustom">自定义 User-Agent</span>
             <input
               id="setting-user-agent"
               type="text"
@@ -522,7 +526,24 @@
               spellcheck="false"
               data-i18n-attr="placeholder:drawer.userAgentHint"
             />
-          </label>
+          </div>
+          <p class="ua-preview mono" id="ua-preview"></p>
+
+          <div class="fingerprint-banner" id="fingerprint-banner" hidden>
+            <svg><use href="#i-alert" /></svg>
+            <div>
+              <strong data-i18n="fingerprint.title">指纹不一致</strong>
+              <span id="fingerprint-text"></span>
+            </div>
+            <button
+              class="ghost-button tiny"
+              id="fingerprint-fix"
+              type="button"
+              data-i18n="fingerprint.fix"
+            >
+              一键对齐
+            </button>
+          </div>
         </fieldset>
 
         <fieldset class="field-group">

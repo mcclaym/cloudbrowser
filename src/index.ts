@@ -9,7 +9,9 @@ import {
   MIN_VIEWPORT_HEIGHT,
   MIN_VIEWPORT_WIDTH,
   REGION_OPTIONS,
+  REGION_PROFILES,
   TIMEZONE_OPTIONS,
+  USER_AGENT_PRESETS,
 } from "./browser-settings";
 import { APP_VERSION, type Env } from "./env";
 import {
@@ -165,6 +167,8 @@ function consoleConfig(env: Env) {
     locales: LOCALE_OPTIONS,
     timezones: TIMEZONE_OPTIONS,
     regions: REGION_OPTIONS,
+    regionProfiles: REGION_PROFILES,
+    userAgentPresets: USER_AGENT_PRESETS,
     blockableResources: BLOCKABLE_RESOURCES,
   };
 }

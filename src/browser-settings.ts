@@ -48,6 +48,32 @@ export interface DevicePreset extends LabelledOption {
   isMobile: boolean;
   hasTouch: boolean;
   deviceScaleFactor: number;
+  /** UA preset that matches this device family, kept fingerprint-coherent. */
+  uaPreset: string;
+}
+
+export type UaPlatform = "desktop" | "mobile";
+
+export interface UserAgentPreset extends LabelledOption {
+  userAgent: string;
+  platform: UaPlatform;
+}
+
+/** A coherent locale + timezone default for a Browser Run exit region. */
+export interface RegionProfile {
+  locale: string;
+  timezone: string;
+}
+
+export type FingerprintIssueCode =
+  | "region-locale"
+  | "region-timezone"
+  | "device-ua";
+
+export interface FingerprintIssue {
+  code: FingerprintIssueCode;
+  /** Suggested value the auto-fix would apply. */
+  suggestion: string;
 }
 
 export const MIN_VIEWPORT_WIDTH = 320;
@@ -66,6 +92,7 @@ export const DEVICE_PRESETS: DevicePreset[] = [
     isMobile: false,
     hasTouch: false,
     deviceScaleFactor: 1,
+    uaPreset: "chrome-win",
   },
   {
     value: "desktop-qhd",
@@ -76,6 +103,7 @@ export const DEVICE_PRESETS: DevicePreset[] = [
     isMobile: false,
     hasTouch: false,
     deviceScaleFactor: 1,
+    uaPreset: "chrome-win",
   },
   {
     value: "laptop",
@@ -86,6 +114,7 @@ export const DEVICE_PRESETS: DevicePreset[] = [
     isMobile: false,
     hasTouch: false,
     deviceScaleFactor: 1,
+    uaPreset: "chrome-win",
   },
   {
     value: "macbook",
@@ -96,6 +125,7 @@ export const DEVICE_PRESETS: DevicePreset[] = [
     isMobile: false,
     hasTouch: false,
     deviceScaleFactor: 2,
+    uaPreset: "chrome-mac",
   },
   {
     value: "tablet",
@@ -106,6 +136,7 @@ export const DEVICE_PRESETS: DevicePreset[] = [
     isMobile: true,
     hasTouch: true,
     deviceScaleFactor: 2,
+    uaPreset: "safari-ios",
   },
   {
     value: "phone",
@@ -116,6 +147,7 @@ export const DEVICE_PRESETS: DevicePreset[] = [
     isMobile: true,
     hasTouch: true,
     deviceScaleFactor: 3,
+    uaPreset: "safari-ios",
   },
   {
     value: "phone-android",
@@ -126,6 +158,7 @@ export const DEVICE_PRESETS: DevicePreset[] = [
     isMobile: true,
     hasTouch: true,
     deviceScaleFactor: 3,
+    uaPreset: "chrome-android",
   },
 ];
 
@@ -187,6 +220,77 @@ export const REGION_OPTIONS: LabelledOption[] = [
   { value: "AU", label: "Australia", labelZh: "澳大利亚" },
   { value: "IN", label: "India", labelZh: "印度" },
 ];
+
+/**
+ * Realistic User-Agent strings so the console never sends an obviously forged
+ * UA. Versions are plausible-but-static; refresh them as Chrome/Safari ship.
+ * `default` keeps Browser Run's own UA (a desktop Linux Chrome).
+ */
+export const USER_AGENT_PRESETS: UserAgentPreset[] = [
+  {
+    value: "chrome-win",
+    label: "Chrome · Windows",
+    labelZh: "Chrome · Windows",
+    platform: "desktop",
+    userAgent:
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
+  },
+  {
+    value: "chrome-mac",
+    label: "Chrome · macOS",
+    labelZh: "Chrome · macOS",
+    platform: "desktop",
+    userAgent:
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
+  },
+  {
+    value: "safari-mac",
+    label: "Safari · macOS",
+    labelZh: "Safari · macOS",
+    platform: "desktop",
+    userAgent:
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15",
+  },
+  {
+    value: "safari-ios",
+    label: "Safari · iPhone",
+    labelZh: "Safari · iPhone",
+    platform: "mobile",
+    userAgent:
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1",
+  },
+  {
+    value: "chrome-android",
+    label: "Chrome · Android",
+    labelZh: "Chrome · Android",
+    platform: "mobile",
+    userAgent:
+      "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36",
+  },
+];
+
+/**
+ * Coherent locale + timezone defaults per exit region. Every value here must
+ * exist in {@link LOCALE_OPTIONS} / {@link TIMEZONE_OPTIONS} (guarded by tests)
+ * so selecting a region can auto-align the fingerprint.
+ */
+export const REGION_PROFILES: Record<string, RegionProfile> = {
+  US: { locale: "en-US", timezone: "America/New_York" },
+  CA: { locale: "en-US", timezone: "America/Vancouver" },
+  GB: { locale: "en-GB", timezone: "Europe/London" },
+  DE: { locale: "de-DE", timezone: "Europe/Berlin" },
+  FR: { locale: "fr-FR", timezone: "Europe/Paris" },
+  NL: { locale: "en-GB", timezone: "Europe/Paris" },
+  ES: { locale: "es-ES", timezone: "Europe/Paris" },
+  BR: { locale: "pt-BR", timezone: "America/Sao_Paulo" },
+  JP: { locale: "ja-JP", timezone: "Asia/Tokyo" },
+  KR: { locale: "ko-KR", timezone: "Asia/Seoul" },
+  SG: { locale: "en-GB", timezone: "Asia/Singapore" },
+  HK: { locale: "zh-TW", timezone: "Asia/Hong_Kong" },
+  TW: { locale: "zh-TW", timezone: "Asia/Taipei" },
+  AU: { locale: "en-GB", timezone: "Australia/Sydney" },
+  IN: { locale: "en-GB", timezone: "Asia/Kolkata" },
+};
 
 export const BLOCKABLE_RESOURCES: BlockableResource[] = [
   "image",
@@ -422,6 +526,85 @@ export function describeBrowserSettings(settings: BrowserSettings): string {
     parts.push(`block:${settings.blockedResources.join("+")}`);
   }
   return parts.join(" · ");
+}
+
+const UA_PRESETS_BY_VALUE = new Map(
+  USER_AGENT_PRESETS.map((preset) => [preset.value, preset]),
+);
+
+export function userAgentPresetByValue(
+  value: string,
+): UserAgentPreset | undefined {
+  return UA_PRESETS_BY_VALUE.get(value);
+}
+
+export function regionProfile(region?: string): RegionProfile | undefined {
+  return region ? REGION_PROFILES[region] : undefined;
+}
+
+/**
+ * Turns the console's UA choice into the string sent to the browser. `mode` is
+ * a preset value, the literal `"custom"`, or empty for the Browser Run default.
+ */
+export function resolveUserAgent(mode: string, custom: string): string {
+  if (mode === "custom") {
+    return custom.trim();
+  }
+  return userAgentPresetByValue(mode)?.userAgent ?? "";
+}
+
+/** Effective UA platform of a choice; the default UA is desktop. */
+export function uaPlatformOf(mode: string): UaPlatform | "unknown" {
+  if (mode === "custom") {
+    return "unknown";
+  }
+  return userAgentPresetByValue(mode)?.platform ?? "desktop";
+}
+
+/** The UA preset that keeps a device family fingerprint-coherent. */
+export function suggestedUaPreset(deviceValue: string): string | undefined {
+  return DEVICE_PRESETS.find((preset) => preset.value === deviceValue)?.uaPreset;
+}
+
+/**
+ * Cross-checks region, locale, timezone and UA platform against each other and
+ * reports what a one-click fix would change. Pure so the console and the tests
+ * share one definition of "consistent".
+ */
+export function fingerprintIssues(input: {
+  region?: string;
+  locale?: string;
+  timezone?: string;
+  deviceMobile: boolean;
+  uaMode: string;
+}): FingerprintIssue[] {
+  const issues: FingerprintIssue[] = [];
+  const profile = regionProfile(input.region);
+
+  if (profile) {
+    if (input.locale && input.locale !== profile.locale) {
+      issues.push({ code: "region-locale", suggestion: profile.locale });
+    }
+    if (input.timezone && input.timezone !== profile.timezone) {
+      issues.push({ code: "region-timezone", suggestion: profile.timezone });
+    }
+  }
+
+  const platform = uaPlatformOf(input.uaMode);
+  if (
+    platform !== "unknown" &&
+    input.deviceMobile !== (platform === "mobile")
+  ) {
+    const wanted: UaPlatform = input.deviceMobile ? "mobile" : "desktop";
+    const suggestion = USER_AGENT_PRESETS.find(
+      (preset) => preset.platform === wanted,
+    );
+    if (suggestion) {
+      issues.push({ code: "device-ua", suggestion: suggestion.value });
+    }
+  }
+
+  return issues;
 }
 
 function readColorScheme(value: unknown): BrowserColorScheme {

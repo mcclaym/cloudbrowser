@@ -15,6 +15,7 @@ export const DEFAULT_SETTINGS = {
   locale: "",
   timezone: "",
   colorScheme: "system",
+  uaMode: "",
   userAgent: "",
   reducedMotion: false,
   blockedResources: [],
